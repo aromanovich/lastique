@@ -10,11 +10,11 @@ setInterval(function() {
         sendToBackground({
             event: 'continue_playing',
             song: {
-                fullId: currentAudioId()
+                id: currentAudioId()
             }
         });
     }
-}, 10000);
+}, 12000);
 
 var oldAjaxPost = ajax.post;
 ajax.post = function(url, data) {
@@ -23,7 +23,7 @@ ajax.post = function(url, data) {
         sendToBackground({
             event: 'start_playing',
             song: {
-                fullId: data.full_id,
+                id: data.full_id,
                 duration: songData[3],
                 artist: songData[5],
                 name: songData[6]
