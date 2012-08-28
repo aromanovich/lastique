@@ -14,7 +14,7 @@ setInterval(function() {
             }
         });
     }
-}, 12000);
+}, LASTIQUE_UPDATE_INTERVAL_SEC * 1000);
 
 var oldAjaxPost = ajax.post;
 ajax.post = function(url, data) {

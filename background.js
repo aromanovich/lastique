@@ -22,30 +22,58 @@ var lastfm = new LastFMClient({
     apiUrl: LAST_FM_BASE_URL
 });
 
+function PostponedFunction(f) {
+    this._timeoutId = null;
+    this._executed = false;
+
+    this.postpone = function(seconds) {
+        if (!this._executed) {
+            if (this._timeoutId) {
+                clearTimeout(this._timeoutId);
+            }
+            this._timeoutId = setTimeout(this.execute.bind(this), seconds * 1000);
+        }
+    }
+
+    this.execute = function() {
+        if (!this._executed) {
+            delete this._timeoutId;
+            f();
+            this._executed = true;
+        }
+    }
+}
+
 var scrobbler = {
     _song: null,
-    _scrobbled: false,
     _playedSoFar: 0,
 
     startedPlaying: function(song) {
         if (song.duration < 30) {
             return;
         }
+        if (this._postponedScrobble) {
+            this._postponedScrobble.execute();
+            delete this._postponedScrobble;
+        }
         this._song = song;
-        this._scrobbled = false;
+        this._scrobbleThreshold = Math.min(this._song.duration / 2, 4 * 60);
         this._playedSoFar = 0;
         this._updateNowPlaying();
     },
 
     continuedPlaying: function(songId) {
-        if (this._song && this._song.id == songId) {
-            this._playedSoFar += 12;
-            if (!this._scrobbled && 
-                    this._playedSoFar > Math.min(this._song.duration / 2, 4 * 60)) {
-                this._scrobble();
-            } else {
-                this._updateNowPlaying();
+        if (!this._song || this._song.id != songId) {
+            console.warn('scrobbler error: song changed but `startedPlaying` was not called!');
+            return;
+        }
+        this._playedSoFar += LASTIQUE_UPDATE_INTERVAL_SEC;
+        this._updateNowPlaying();
+        if (this._playedSoFar > this._scrobbleThreshold) {
+            if (!this._postponedScrobble) {
+                this._postponedScrobble = new PostponedFunction(this._scrobble.bind(this));
             }
+            this._postponedScrobble.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
         }
     },
 
@@ -61,8 +89,6 @@ var scrobbler = {
     },
 
     _scrobble: function() {
-        this._scrobbled = true;
-        
         var timestamp = Math.round(new Date().getTime() / 1000);
         lastfm.signedCall('POST', {
             method: 'track.scrobble', 

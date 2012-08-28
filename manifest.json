@@ -1,7 +1,10 @@
 {
   "name": "Lastique",
   "version": "0.1",
-  "background": {"scripts": ["libs/zepto.min.js", "libs/md5.js", "lastfm.js", "background.js"]},
+  "background": {
+    "scripts": ["libs/zepto.min.js", "libs/md5.js", "lastfm.js",
+                "shared_constants.js", "background.js"]
+  },
   "description": "Last.fm scrobbler for vk.com",
   "browser_action": {
     "default_icon": "icon.png",
@@ -14,6 +17,6 @@
       "js": ["injector.js"]
     }
   ],
-  "web_accessible_resources": ["connectors/vk.js"],
+  "web_accessible_resources": ["shared_constants.js", "connectors/vk.js"],
   "manifest_version": 2
 }
