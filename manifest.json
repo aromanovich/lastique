@@ -1,14 +1,19 @@
 {
+  "manifest_version": 2,
   "name": "Lastique",
   "version": "0.1",
+  "description": "Last.fm scrobbler for vk.com",
+  "icons": {
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "browser_action": {
+    "default_icon": "icon-128.png",
+    "default_popup": "popup.html"
+  },
   "background": {
     "scripts": ["libs/zepto.min.js", "libs/md5.js", "lastfm.js",
                 "shared_constants.js", "background.js"]
-  },
-  "description": "Last.fm scrobbler for vk.com",
-  "browser_action": {
-    "default_icon": "icon.png",
-    "default_popup": "popup.html"
   },
   "content_scripts": [
     {
@@ -17,6 +22,5 @@
       "js": ["injector.js"]
     }
   ],
-  "web_accessible_resources": ["shared_constants.js", "connectors/vk.js"],
-  "manifest_version": 2
+  "web_accessible_resources": ["shared_constants.js", "connectors/vk.js"]
 }
