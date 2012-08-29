@@ -23,23 +23,23 @@ var lastfm = new LastFMClient({
 });
 
 function PostponedFunction(f) {
-    this._timeoutId = null;
-    this._executed = false;
+    var timeoutId = null;
+    var executed = false;
 
     this.postpone = function(seconds) {
-        if (!this._executed) {
-            if (this._timeoutId) {
-                clearTimeout(this._timeoutId);
+        if (!executed) {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
             }
-            this._timeoutId = setTimeout(this.execute.bind(this), seconds * 1000);
+            timeoutId = setTimeout(this.execute.bind(this), seconds * 1000);
         }
     }
 
     this.execute = function() {
-        if (!this._executed) {
-            delete this._timeoutId;
+        if (!executed) {
             f();
-            this._executed = true;
+            timeoutId = null;
+            executed = true;
         }
     }
 }
