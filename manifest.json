@@ -4,8 +4,8 @@
   "version": "0.1",
   "description": "Last.fm scrobbler for vk.com",
   "icons": {
-    "48": "icons/icon-48.png",
-    "128": "icons/icon-128.png"
+    "48": "icon-48.png",
+    "128": "icon-128.png"
   },
   "browser_action": {
     "default_icon": "icon-128.png",
