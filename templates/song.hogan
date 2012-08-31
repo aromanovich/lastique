@@ -1,0 +1,10 @@
+<a href="{{trackUrl}}">
+  <img src="{{iconUrl}}" class="icon" />
+</a>
+
+<a href="{{artistUrl}}">{{artist}}</a> &ndash; <a href="{{trackUrl}}">{{track}}</a>
+
+<span class="date">
+  <img src="img/icon_eq.gif" class="now-playing-icon">
+  {{date}}
+</span>

@@ -1,0 +1,18 @@
+<h1>Привет, <a href="http://www.last.fm/user/{{username}}">{{username}}</a>!</h1>
+{{#isNothingToShow}}
+  Скоро здесь появятся заскробленные песни.
+{{/isNothingToShow}}
+
+{{#nowPlaying}}
+  <div id="now-playing" class="song">
+    {{> song}}
+  </div>
+{{/nowPlaying}}
+
+<ul id="last-scrobbled">
+  {{#lastScrobbled}}
+    <li class="song">
+      {{> song}}
+    </li>
+  {{/lastScrobbled}}
+</ul>

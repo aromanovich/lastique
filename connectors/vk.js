@@ -1,16 +1,17 @@
 function sendToBackground(payload) {
-    console.log('sendToBackground', payload);
     window.postMessage({
         type: 'lastique',
         payload: payload
-    }, "*");
+    }, '*');
 }
+
 
 function decodeHtmlEntities(input) {
     var textarea = document.createElement('textarea');
     textarea.innerHTML = input;
     return textarea.value;
 }
+
 
 setInterval(function() {
     if (currentAudioId() && !audioPlayer.player.paused()) {
@@ -23,7 +24,9 @@ setInterval(function() {
     }
 }, LASTIQUE_UPDATE_INTERVAL_SEC * 1000);
 
+
 var oldAjaxPost = ajax.post;
+
 ajax.post = function(url, data) {
     if (url == 'audio' && data && data.act == 'audio_status') {
         var songData = ls.get('pad_lastsong') || audioPlayer.lastSong;

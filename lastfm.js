@@ -40,3 +40,8 @@ LastFMClient.prototype.synchronousSignedCall = function(type, data, callback) {
 LastFMClient.prototype.signedCall = function(type, data, callback, sync) {
     this._signedCall(type, data, callback, true);
 };
+
+LastFMClient.prototype.unsignedCall  = function(type, data, callback) {
+    data.api_key = this._apiKey;
+    this._call(type, data, callback, true);
+}
