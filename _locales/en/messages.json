@@ -1,0 +1,17 @@
+{
+    "extensionDescription": {
+        "message": "Last.fm scrobbler for vk.com"
+    },
+    "hello": {
+        "message": "Hey"
+    },
+    "isNothingToShow": {
+        "message": "You haven't listened to any music yet."
+    },
+    "playingNow": {
+        "message": "Playing now"
+    },
+    "authorize": {
+        "message": "Authorize"
+    }
+}

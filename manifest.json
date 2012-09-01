@@ -1,8 +1,9 @@
 {
   "manifest_version": 2,
   "name": "Lastique",
-  "version": "0.1",
-  "description": "Last.fm scrobbler for vk.com",
+  "version": "0.0.1",
+  "default_locale": "en",
+  "description": "__MSG_extensionDescription__",
   "icons": {
     "48": "icon-48.png",
     "128": "icon-128.png"

@@ -22,6 +22,14 @@ function PostponedFunction(f) {
             executed = true;
         }
     }
+
+    this.cancel = function() {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+        timeoutId = null;
+        executed = true;
+    }
 }
 
 
@@ -89,7 +97,7 @@ var scrobbler = {
         }, function(response) {});
         storage.setNowPlaying(this._song.artist, this._song.name);
         if (this._postponedClearNowPlaying) {
-            this._postponedClearNowPlaying.execute()
+            this._postponedClearNowPlaying.cancel()
         }
         this._postponedClearNowPlaying =
                 new PostponedFunction(storage.clearNowPlaying.bind(storage));
@@ -167,11 +175,13 @@ var storage = {
 
     setNowPlaying: function(artist, track) {
         this._getTrackInfo(artist, track, function(trackData) {
+            console.log('setNowPlaying', trackData);
             localStorage.nowPlaying = JSON.stringify(trackData);
         });
     },
 
     clearNowPlaying: function() {
+        console.log('clearNowPlaying');
         delete localStorage.nowPlaying;
     },
 
@@ -183,7 +193,7 @@ var storage = {
             $.extend(trackData, {timestamp: timestamp});
             var table = JSON.parse(localStorage.lastScrobbled);
             table.push(trackData);
-            localStorage.lastScrobbled = JSON.stringify(table);
+            localStorage.lastScrobbled = JSON.stringify(table.slice(-20));
         });
     }
 }

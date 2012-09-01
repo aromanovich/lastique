@@ -1,0 +1,17 @@
+{
+    "extensionDescription": {
+        "message": "Last.fm скробблер для vk.com"
+    },
+    "hello": {
+        "message": "Привет"
+    },
+    "isNothingToShow": {
+        "message": "Скоро здесь появятся заскробленные песни."
+    },
+    "playingNow": {
+        "message": "Играет сейчас"
+    },
+    "authorize": {
+        "message": "Авторизуй"
+    }
+}

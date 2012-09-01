@@ -1,6 +1,6 @@
-<h1>Привет, <a href="http://www.last.fm/user/{{username}}">{{username}}</a>!</h1>
+<h1>{{i18n.hello}}, <a href="http://www.last.fm/user/{{username}}">{{username}}</a>!</h1>
 {{#isNothingToShow}}
-  Скоро здесь появятся заскробленные песни.
+  {{i18n.isNothingToShow}}
 {{/isNothingToShow}}
 
 {{#nowPlaying}}
