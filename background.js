@@ -110,28 +110,59 @@ var scrobbler = {
 }
 
 
+var cache = {
+    /* Cache that contains no more than specified numbers of entries. */
+    _N: 50,
+    _keys: [],
+    _cache: {},
+
+    add: function(key, value) {
+        if (this._cache[key]) {
+            return;
+        }
+        this._keys.push(key);
+        this._cache[key] = value;
+        if (this._keys.length > this._N) {
+            var keyToRemove = this._keys.shift();
+            delete this._cache[keyToRemove];
+        }
+    },
+
+    get: function(key) {
+        console.log(key, this._cache[key]);
+        return this._cache[key];
+    }
+}
+
+
 var storage = {
     _getTrackInfo: function(artist, track, callback) {
-        lastfm.unsignedCall('GET', {
-            method: 'track.getInfo',
-            artist: artist,
-            track: track
-        }, function(response) {
-            var track = response.track;
-            
-            var iconUrl;
-            if (track.album && track.album.image && track.album.image.length) {
-                iconUrl = track.album.image[0]['#text'].replace('serve/64s', 'serve/34s');
-            }
-
-            callback({
-                track: track.name,
-                trackUrl: track.url,
-                artist: track.artist.name,
-                artistUrl: track.artist.url,
-                iconUrl: iconUrl
+        var cacheKey = artist + '-' + track;
+        var trackData = cache.get(cacheKey);
+        if (trackData) {
+            callback(trackData);
+        } else {
+            lastfm.unsignedCall('GET', {
+                method: 'track.getInfo',
+                artist: artist,
+                track: track
+            }, function(response) {
+                var track = response.track;
+                var iconUrl;
+                if (track.album && track.album.image && track.album.image.length) {
+                    iconUrl = track.album.image[0]['#text'].replace('serve/64s', 'serve/34s');
+                }
+                trackData = {
+                    track: track.name,
+                    trackUrl: track.url,
+                    artist: track.artist.name,
+                    artistUrl: track.artist.url,
+                    iconUrl: iconUrl
+                };
+                cache.add(cacheKey, trackData);
+                callback(trackData);
             });
-        });
+        }
     },
 
     setNowPlaying: function(artist, track) {
@@ -163,17 +194,17 @@ var auth = {
         var url = 'http://www.last.fm/api/auth/'
                 + '?api_key=' + LAST_FM_API_KEY
                 + '&token=' + localStorage.token;
-        if (!auth.authTabId) {
+        if (!this.authTabId) {
             chrome.tabs.create({url: url}, function(tab) {
-                auth.authTabId = tab.id;
+                this.authTabId = tab.id;
                 chrome.tabs.onRemoved.addListener(function(tabId) {
-                    if (auth.authTabId == tabId) {
-                        delete auth.authTabId;
+                    if (this.authTabId == tabId) {
+                        delete this.authTabId;
                     }
                 });
             });
         } else {
-            chrome.tabs.update(auth.authTabId, {selected: true});
+            chrome.tabs.update(this.authTabId, {selected: true});
         }
     },
 
@@ -191,36 +222,37 @@ var auth = {
     obtainSessionId: function(requireAuthorizationIfNeeded) {
         if (!localStorage.sessionId) {
             if (!localStorage.token) {
-                auth.obtainToken();
+                this.obtainToken();
                 if (requireAuthorizationIfNeeded) {
-                    auth.authorizeToken();
+                    this.authorizeToken();
                 }
                 return false;
             }
             lastfm.synchronousSignedCall('GET', {
                 method: 'auth.getSession',
                 token: localStorage.token
-            }, function(response) {
+            }, (function(response) {
                 if (response.error) {
                     if (response.error == 14 || response.error == 15) {
                         // token has expired or has not been authorized
                         if (response.error == 15) {
                             // token has expired
-                            auth.obtainToken();
+                            this.obtainToken();
                         }
                         if (requireAuthorizationIfNeeded) {
-                            auth.authorizeToken();
+                            this.authorizeToken();
                         }
                     }
                 } else {
                     localStorage.username = response.session.name;
                     localStorage.sessionId = response.session.key;
                 }
-            });
+            }).bind(this));
         }
         return localStorage.sessionId;
     }
 }
+
 
 Zepto(function($) {
     auth.obtainSessionId(false);
