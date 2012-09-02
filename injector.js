@@ -5,6 +5,7 @@ function injectScript(name) {
 }
 
 injectScript('shared_constants.js');
+injectScript('connectors/utils.js');
 
 var CONNECTORS = {
     '^https?:\/\/vk.com.*': 'connectors/vk.js'

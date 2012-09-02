@@ -27,7 +27,7 @@ LastFMClient.prototype._call = function(type, data, callback, async) {
     });
 }
 
-LastFMClient.prototype._signedCall  = function(type, data, callback, async) {
+LastFMClient.prototype._signedCall = function(type, data, callback, async) {
     data.api_key = this._apiKey;
     data.api_sig = this._getApiSignature(data);
     this._call(type, data, callback, async);
@@ -41,7 +41,7 @@ LastFMClient.prototype.signedCall = function(type, data, callback, sync) {
     this._signedCall(type, data, callback, true);
 };
 
-LastFMClient.prototype.unsignedCall  = function(type, data, callback) {
+LastFMClient.prototype.unsignedCall = function(type, data, callback) {
     data.api_key = this._apiKey;
     this._call(type, data, callback, true);
 }

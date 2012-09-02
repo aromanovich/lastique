@@ -92,10 +92,10 @@ var scrobbler = {
         lastfm.signedCall('POST', {
             method: 'track.updateNowPlaying', 
             artist: this._song.artist,
-            track: this._song.name,
+            track: this._song.track,
             sk: auth.obtainSessionId(true)
         }, function(response) {});
-        storage.setNowPlaying(this._song.artist, this._song.name);
+        storage.setNowPlaying(this._song.artist, this._song.track);
         if (this._postponedClearNowPlaying) {
             this._postponedClearNowPlaying.cancel()
         }
@@ -109,11 +109,11 @@ var scrobbler = {
         lastfm.signedCall('POST', {
             method: 'track.scrobble', 
             artist: this._song.artist,
-            track: this._song.name,
+            track: this._song.track,
             timestamp: timestamp,
             sk: auth.obtainSessionId(true)
         }, function(response) {});
-        storage.addToLastScrobbled(this._song.artist, this._song.name, timestamp);
+        storage.addToLastScrobbled(this._song.artist, this._song.track, timestamp);
     }
 }
 
@@ -137,7 +137,6 @@ var cache = {
     },
 
     get: function(key) {
-        console.log(key, this._cache[key]);
         return this._cache[key];
     }
 }
@@ -175,13 +174,11 @@ var storage = {
 
     setNowPlaying: function(artist, track) {
         this._getTrackInfo(artist, track, function(trackData) {
-            console.log('setNowPlaying', trackData);
             localStorage.nowPlaying = JSON.stringify(trackData);
         });
     },
 
     clearNowPlaying: function() {
-        console.log('clearNowPlaying');
         delete localStorage.nowPlaying;
     },
 

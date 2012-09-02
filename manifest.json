@@ -23,5 +23,5 @@
       "js": ["injector.js"]
     }
   ],
-  "web_accessible_resources": ["shared_constants.js", "connectors/vk.js"]
+  "web_accessible_resources": ["shared_constants.js", "connectors/utils.js", "connectors/vk.js"]
 }

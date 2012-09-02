@@ -1,18 +1,3 @@
-function sendToBackground(payload) {
-    window.postMessage({
-        type: 'lastique',
-        payload: payload
-    }, '*');
-}
-
-
-function decodeHtmlEntities(input) {
-    var textarea = document.createElement('textarea');
-    textarea.innerHTML = input;
-    return textarea.value;
-}
-
-
 setInterval(function() {
     if (currentAudioId() && !audioPlayer.player.paused()) {
         sendToBackground({
@@ -35,7 +20,7 @@ ajax.post = function(url, data) {
                 id: data.full_id,
                 duration: songData[3],
                 artist: decodeHtmlEntities(songData[5]),
-                name: decodeHtmlEntities(songData[6])
+                track: decodeHtmlEntities(songData[6])
             }
         });
     }
@@ -43,7 +28,7 @@ ajax.post = function(url, data) {
 }
 
 
-// Inject code in audioPlayer.callback if status export is off
+// Inject code in audioPlayer.callback if status export is not enabled
 
 var oldDone = stManager.done;
 stManager.done = function(f) {
@@ -56,7 +41,6 @@ stManager.done = function(f) {
 
 
 var injected = false;
-
 function inject() {
     var oldPlayback = audioPlayer.playback;
 
@@ -77,7 +61,7 @@ function inject() {
                 id: fullId,
                 duration: songData[3],
                 artist: decodeHtmlEntities(songData[5]),
-                name: decodeHtmlEntities(songData[6])
+                track: decodeHtmlEntities(songData[6])
             }
         });
         oldPlayback.apply(this, arguments);
