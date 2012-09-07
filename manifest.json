@@ -18,10 +18,11 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://vk.com/*"],
+      "matches": ["*://vk.com/*", "*://*.youtube.com/*", "*://youtube.com/*"],
       "run_at": "document_end",
       "js": ["injector.js"]
     }
   ],
-  "web_accessible_resources": ["shared_constants.js", "connectors/utils.js", "connectors/vk.js"]
+  "web_accessible_resources": ["shared_constants.js", "connectors/utils.js", "connectors/vk.js",
+                               "connectors/youtube.js"]
 }
