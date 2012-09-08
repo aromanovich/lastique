@@ -1,3 +1,5 @@
+(function() {
+
 /* States */
 const UNSTARTED = -1;
 const ENDED = 0;
@@ -16,7 +18,16 @@ var secondsPlayed = 0;
 var lastTimeStartedPlaying;
 
 
-function onStateChangeHandler(newState) {
+/* Get called when YouTube player and API is ready. */
+window.onYouTubePlayerReady = function() {
+    if (parse(getVideoTitle())) {
+        player = document.getElementById(window.yt.playerConfig.attrs.id);
+        player.addEventListener('onStateChange', 'onStateChangeHandler');
+    }
+}
+
+
+window.onStateChangeHandler = function(newState) {
     if (newState == PLAYING) {
         if (currentState == UNSTARTED || currentState == ENDED) {
             sendStartPlaying();
@@ -43,31 +54,23 @@ function onStateChangeHandler(newState) {
 }
 
 
-/* Get called when YouTube player and API is ready. */
-function onYouTubePlayerReady() {
-    if (parseVideoTitle()) {
-        player = document.getElementById(window.yt.playerConfig.attrs.id);
-        player.addEventListener('onStateChange', 'onStateChangeHandler');
-    }
-}
-
-
 function sendStartPlaying() {
-    var parsedTitle = parseVideoTitle();
+    var parsedTitle = parse(getVideoTitle());
     sendToBackground({
         event: 'start_playing',
         service: 'www.youtube.com',
         song: {
             id: yt.config_.VIDEO_ID,
             duration: player.getDuration(),
-            artist: parsedTitle['artist'],
-            track: parsedTitle['track']
+            artist: parsedTitle[0],
+            track: parsedTitle[1]
         }
     });
 }
 
 
-/* Check that video was playing long enough and send `continue_playing`. */
+/* Check that video was playing long enough (more than LASTIQUE_UPDATE_INTERVAL_SEC se
+ * seconds since the last sent `continue_playing` event) and send `continue_playing`. */
 function sendContinuePlaying() {
     if (secondsPlayed < secondsTracked + LASTIQUE_UPDATE_INTERVAL_SEC) {
         return;
@@ -82,23 +85,6 @@ function sendContinuePlaying() {
 }
 
 
-function parseVideoTitle() {
-    var title = getVideoTitle();
-    var separators = ['-', '–', '—'];
-    for (var i = 0; i < separators.length; ++i) {
-        var separator = separators[i];
-        var titleParts = title.split(separator);
-        if (titleParts.length == 2) {
-            return {
-                artist: decodeHtmlEntities(titleParts[0]),
-                track: decodeHtmlEntities(titleParts[1])
-            };
-        }
-    }
-    return false;
-}
-
-
 function getVideoTitle() {
     var metaTags = document.getElementsByTagName('meta');
     for (var i = 0; i < metaTags.length; ++i) {
@@ -109,3 +95,40 @@ function getVideoTitle() {
         }
     }
 }
+
+
+function trim(s) {
+    return s.replace(/^\s+/, '').replace(/\s+$/, '');
+}
+
+
+function parse(title) {
+    var separator = /[-–—~|:]/;
+    var trackTerminators = [separator, /\(/, /\[/, /{/, /live @/i, 'LIVE',
+            /@/, /\+/, /live at/i, /full hd/i, /hd/i, /hq/i, /720/, /1080/,
+            'with lyrics$', 'lyrics$', /live$/i];
+
+    if (title.search(separator) == -1) {
+        return false;
+    }
+
+    var artist = title.split(separator, 1)[0];
+    artist = artist.replace(/\[.*?\]/g, '')
+                   .replace(/\(.*?\)/g, '')
+                   .replace(/\{.*?\}/g, '');
+
+    var track = title.substr(title.search(separator) + 1);
+    trackTerminators.forEach(function(terminator) {
+        var terminatorIndex = track.search(terminator);
+        if (terminatorIndex != -1) {
+            track = track.substring(0, terminatorIndex);
+        }
+    });
+    track = trim(track);
+    track = track.replace(/^"(.+)".*/, '$1')
+                 .replace(/^'(.+)'.*/, '$1');
+ 
+    return [trim(artist), trim(track)];
+}
+
+})();

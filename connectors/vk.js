@@ -1,3 +1,5 @@
+(function() {
+
 setInterval(function() {
     if (currentAudioId() && !audioPlayer.player.paused()) {
         sendToBackground({
@@ -10,26 +12,32 @@ setInterval(function() {
 }, LASTIQUE_UPDATE_INTERVAL_SEC * 1000);
 
 
+function sendStartPlaying() {
+    var songData = ls.get('pad_lastsong') || audioPlayer.lastSong;
+    sendToBackground({
+        event: 'start_playing',
+        service: 'www.vk.com',
+        song: {
+            id: currentAudioId(),
+            duration: songData[3],
+            artist: decodeHtmlEntities(songData[5]),
+            track: decodeHtmlEntities(songData[6])
+        }
+    });
+}
+
+
 var oldAjaxPost = ajax.post;
 ajax.post = function(url, data) {
     if (url == 'audio' && data && data.act == 'audio_status') {
-        var songData = ls.get('pad_lastsong') || audioPlayer.lastSong;
-        sendToBackground({
-            event: 'start_playing',
-            service: 'www.vk.com',
-            song: {
-                id: data.full_id,
-                duration: songData[3],
-                artist: decodeHtmlEntities(songData[5]),
-                track: decodeHtmlEntities(songData[6])
-            }
-        });
+        sendStartPlaying();
     }
     oldAjaxPost.apply(this, arguments);
 }
 
 
 // Inject code in audioPlayer.callback if status export is not enabled
+var injected = false;
 
 var oldDone = stManager.done;
 stManager.done = function(f) {
@@ -40,33 +48,12 @@ stManager.done = function(f) {
     oldDone.apply(this, arguments);
 }
 
-
-var injected = false;
-
 function inject() {
     var oldPlayback = audioPlayer.playback;
-
     audioPlayer.playback = function(paused) {
-        // Copy-paste from vk.com
-        var _a = audioPlayer, aid = currentAudioId(), ids = (aid || '').split('_');
-        if (ids.length < 2 && cur.oid) {
-            ids = [cur.oid, aid];
-            aid = ids.join('_');
-        }
-        // End of copy-paste
-        
-        var fullId = aid;
-        var songData = ls.get('pad_lastsong') || audioPlayer.lastSong;
-        sendToBackground({
-            event: 'start_playing',
-            service: 'www.vk.com',
-            song: {
-                id: fullId,
-                duration: songData[3],
-                artist: decodeHtmlEntities(songData[5]),
-                track: decodeHtmlEntities(songData[6])
-            }
-        });
+        sendStartPlaying();
         oldPlayback.apply(this, arguments);
     }
 }
+
+})();
