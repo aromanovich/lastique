@@ -47,7 +47,7 @@ var lastfm = new LastFMClient({
 chrome.extension.onConnect.addListener(function(port) {
     port.onMessage.addListener(function(message) {
         if (message.event == 'start_playing') {
-            scrobbler.startedPlaying(message.song);
+            scrobbler.startedPlaying(message.song, message.service);
         } else if (message.event == 'continue_playing') {
             scrobbler.continuedPlaying(message.song.id);
         }
@@ -57,9 +57,10 @@ chrome.extension.onConnect.addListener(function(port) {
 
 var scrobbler = {
     _song: null,
+    _service: null,
     _playedSoFar: 0,
 
-    startedPlaying: function(song) {
+    startedPlaying: function(song, service) {
         if (song.duration < 30) {
             return;
         }
@@ -68,6 +69,7 @@ var scrobbler = {
             delete this._postponedScrobble;
         }
         this._song = song;
+        this._service = service;
         this._scrobbleThreshold = Math.min(this._song.duration / 2, 4 * 60);
         this._playedSoFar = 0;
         this._updateNowPlaying();
@@ -95,7 +97,7 @@ var scrobbler = {
             track: this._song.track,
             sk: auth.obtainSessionId(true)
         }, function(response) {});
-        storage.setNowPlaying(this._song.artist, this._song.track);
+        storage.setNowPlaying(this._song.artist, this._song.track, this._service);
         if (this._postponedClearNowPlaying) {
             this._postponedClearNowPlaying.cancel()
         }
@@ -113,7 +115,7 @@ var scrobbler = {
             timestamp: timestamp,
             sk: auth.obtainSessionId(true)
         }, function(response) {});
-        storage.addToLastScrobbled(this._song.artist, this._song.track, timestamp);
+        storage.addToLastScrobbled(this._song.artist, this._song.track, timestamp, this._service);
     }
 }
 
@@ -172,8 +174,9 @@ var storage = {
         }
     },
 
-    setNowPlaying: function(artist, track) {
+    setNowPlaying: function(artist, track, service) {
         this._getTrackInfo(artist, track, function(trackData) {
+            $.extend(trackData, {service: service});
             localStorage.nowPlaying = JSON.stringify(trackData);
         });
     },
@@ -182,12 +185,12 @@ var storage = {
         delete localStorage.nowPlaying;
     },
 
-    addToLastScrobbled: function(artist, track, timestamp) {
+    addToLastScrobbled: function(artist, track, timestamp, service) {
         if (!localStorage.lastScrobbled) {
             localStorage.lastScrobbled = JSON.stringify([]);
         }
         this._getTrackInfo(artist, track, function(trackData) {
-            $.extend(trackData, {timestamp: timestamp});
+            $.extend(trackData, {timestamp: timestamp, service: service});
             var table = JSON.parse(localStorage.lastScrobbled);
             table.push(trackData);
             localStorage.lastScrobbled = JSON.stringify(table.slice(-20));

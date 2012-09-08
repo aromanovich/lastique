@@ -56,6 +56,7 @@ function sendStartPlaying() {
     var parsedTitle = parseVideoTitle();
     sendToBackground({
         event: 'start_playing',
+        service: 'www.youtube.com',
         song: {
             id: yt.config_.VIDEO_ID,
             duration: player.getDuration(),

@@ -7,4 +7,11 @@
 <span class="date">
   <img src="img/eq.gif" class="now-playing-icon">
   {{date}}
+  {{#service}}
+    from
+    <a href="http://{{service}}">
+      <img src="http://www.google.com/s2/favicons?domain={{service}}"
+           title="{{service}}" class="service-icon">
+    </a>
+  {{/service}}
 </span>

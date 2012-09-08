@@ -29,6 +29,10 @@ a:visited {
   margin-bottom: 2px;
 }
 
+.service-icon {
+  vertical-align: middle;
+}
+
 #last-scrobbled {
   padding: 0;
   margin: 0;

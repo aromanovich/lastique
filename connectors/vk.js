@@ -16,6 +16,7 @@ ajax.post = function(url, data) {
         var songData = ls.get('pad_lastsong') || audioPlayer.lastSong;
         sendToBackground({
             event: 'start_playing',
+            service: 'www.vk.com',
             song: {
                 id: data.full_id,
                 duration: songData[3],
@@ -41,6 +42,7 @@ stManager.done = function(f) {
 
 
 var injected = false;
+
 function inject() {
     var oldPlayback = audioPlayer.playback;
 
@@ -57,6 +59,7 @@ function inject() {
         var songData = ls.get('pad_lastsong') || audioPlayer.lastSong;
         sendToBackground({
             event: 'start_playing',
+            service: 'www.vk.com',
             song: {
                 id: fullId,
                 duration: songData[3],

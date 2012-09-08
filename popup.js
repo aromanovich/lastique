@@ -4,7 +4,6 @@ var backgroundPage = chrome.extension.getBackgroundPage();
 function renderPopup() {
     var table = JSON.parse(localStorage.lastScrobbled || '[]');
     var nowPlaying = JSON.parse(localStorage.nowPlaying || 'false');
-
     var bodyHtml = T.popup.render({
         username: localStorage.username,
         now: moment(),
