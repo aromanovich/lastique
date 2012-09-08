@@ -8,12 +8,12 @@ injectScript('shared_constants.js');
 injectScript('connectors/utils.js');
 
 var CONNECTORS = {
-    '^https?:\/\/vk.com.*': 'connectors/vk.js',
-    '^https?:\/\/(www\.)?youtube.com.*': 'connectors/youtube.js'
+    '^https?:\/\/vk.com.*$': 'connectors/vk.js',
+    '^https?:\/\/(www\.)?youtube.com.*$': 'connectors/youtube.js'
 }
 
 Object.keys(CONNECTORS).forEach(function(path) {
-    if (new RegExp(path).test(window.location)) {
+    if (new RegExp(path, 'i').test(window.location)) {
         injectScript(CONNECTORS[path]);
     }
 })

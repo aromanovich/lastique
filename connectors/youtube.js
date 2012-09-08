@@ -6,6 +6,7 @@ const PAUSED = 2;
 const BUFFERING = 3;
 const CUED = 5;
 
+
 var player;
 var updateInterval;
 var currentState = UNSTARTED;
@@ -17,7 +18,7 @@ var lastTimeStartedPlaying;
 
 function onStateChangeHandler(newState) {
     if (newState == PLAYING) {
-        if (currentState == UNSTARTED) {
+        if (currentState == UNSTARTED || currentState == ENDED) {
             sendStartPlaying();
             setInterval(sendContinuePlaying, LASTIQUE_UPDATE_INTERVAL_SEC * 1000);
         }
@@ -28,7 +29,7 @@ function onStateChangeHandler(newState) {
 
         updateInterval = setInterval(function() {
             var continuedPlaying = getTimestamp();
-            secondsPlayed += continuedPlaying - lastTimeStartedPlaying;
+            secondsPlayed += (continuedPlaying - lastTimeStartedPlaying);
             lastTimeStartedPlaying = continuedPlaying;
         }, 1000);
     } else {
@@ -44,8 +45,7 @@ function onStateChangeHandler(newState) {
 
 /* Get called when YouTube player and API is ready. */
 function onYouTubePlayerReady() {
-    var titleParts = getVideoTitle().split('-');
-    if (titleParts.length == 2) {
+    if (parseVideoTitle()) {
         player = document.getElementById(window.yt.playerConfig.attrs.id);
         player.addEventListener('onStateChange', 'onStateChangeHandler');
     }
@@ -53,14 +53,14 @@ function onYouTubePlayerReady() {
 
 
 function sendStartPlaying() {
-    var titleParts = getVideoTitle().split('-');
+    var parsedTitle = parseVideoTitle();
     sendToBackground({
         event: 'start_playing',
         song: {
             id: yt.config_.VIDEO_ID,
             duration: player.getDuration(),
-            artist: decodeHtmlEntities(titleParts[0]),
-            track: decodeHtmlEntities(titleParts[1])
+            artist: parsedTitle['artist'],
+            track: parsedTitle['track']
         }
     });
 }
@@ -78,6 +78,23 @@ function sendContinuePlaying() {
         }
     });
     secondsTracked += LASTIQUE_UPDATE_INTERVAL_SEC;
+}
+
+
+function parseVideoTitle() {
+    var title = getVideoTitle();
+    var separators = ['-', '–', '—'];
+    for (var i = 0; i < separators.length; ++i) {
+        var separator = separators[i];
+        var titleParts = title.split(separator);
+        if (titleParts.length == 2) {
+            return {
+                artist: decodeHtmlEntities(titleParts[0]),
+                track: decodeHtmlEntities(titleParts[1])
+            };
+        }
+    }
+    return false;
 }
 
 

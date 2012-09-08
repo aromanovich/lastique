@@ -1,5 +1,4 @@
 function sendToBackground(payload) {
-    console.log(payload);
     window.postMessage({
         type: 'lastique',
         payload: payload
