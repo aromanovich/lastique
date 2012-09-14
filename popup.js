@@ -14,9 +14,6 @@ function renderPopup() {
                 return chrome.i18n.getMessage('playingNow');
             }
         },
-        icon: function() {
-            return this.iconUrl || './img/no-icon.png';
-        },
         isNothingToShow: !nowPlaying && table.length == 0,
         nowPlaying: nowPlaying,
         lastScrobbled: table.slice(nowPlaying ? -9 : -10).reverse(),
