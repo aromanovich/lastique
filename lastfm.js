@@ -4,6 +4,7 @@ function LastFMClient(options) {
     this._apiUrl = options.apiUrl || 'http://ws.audioscrobbler.com/2.0/';
 }
 
+
 LastFMClient.prototype._getApiSignature = function(data) {
     var keys = Object.keys(data).sort();
     var nameValueString = keys.reduce(function(prev, key) {
@@ -12,7 +13,8 @@ LastFMClient.prototype._getApiSignature = function(data) {
     return md5(nameValueString + this._apiSecret);
 }
 
-LastFMClient.prototype._call = function(type, data, callback, async) {
+
+LastFMClient.prototype._call = function(type, data, callback, context, async) {
     data.format = 'json';
     $.ajax({
         type: type,
@@ -20,28 +22,32 @@ LastFMClient.prototype._call = function(type, data, callback, async) {
         data: data,
         dataType: 'json',
         async: async,
-        success: callback,
+        success: context ? callback.bind(context) : callback,
         error: function(data) {
             console.log('Something went wrong', data);
         }
     });
 }
 
-LastFMClient.prototype._signedCall = function(type, data, callback, async) {
+
+LastFMClient.prototype._signedCall = function(type, data, callback, context, async) {
     data.api_key = this._apiKey;
     data.api_sig = this._getApiSignature(data);
-    this._call(type, data, callback, async);
+    this._call(type, data, callback, context, async);
 }
 
-LastFMClient.prototype.synchronousSignedCall = function(type, data, callback) {
-    this._signedCall(type, data, callback, false);
+
+LastFMClient.prototype.synchronousSignedCall = function(type, data, callback, context) {
+    this._signedCall(type, data, callback, context, false);
 };
 
-LastFMClient.prototype.signedCall = function(type, data, callback, sync) {
-    this._signedCall(type, data, callback, true);
+
+LastFMClient.prototype.signedCall = function(type, data, callback, context) {
+    this._signedCall(type, data, callback, context, true);
 };
 
-LastFMClient.prototype.unsignedCall = function(type, data, callback) {
+
+LastFMClient.prototype.unsignedCall = function(type, data, callback, context) {
     data.api_key = this._apiKey;
-    this._call(type, data, callback, true);
+    this._call(type, data, callback, context, true);
 }

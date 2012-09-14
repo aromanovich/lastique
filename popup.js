@@ -22,13 +22,35 @@ function renderPopup() {
         lastScrobbled: table.slice(nowPlaying ? -9 : -10).reverse(),
         i18n: {
             isNothingToShow: chrome.i18n.getMessage('isNothingToShow'),
-            hello: chrome.i18n.getMessage('hello')
+            hello: chrome.i18n.getMessage('hello'),
+            from: chrome.i18n.getMessage('from'),
+            dontScrobble: chrome.i18n.getMessage('dontScrobble'),
+            unscrobble: chrome.i18n.getMessage('unscrobble')
         }
     }, {
         song: T.song
     });
     
     $(document.body).html(bodyHtml);
+
+    $('#now-playing .unscrobble').on('click', function() {
+        backgroundPage.scrobbler.cancelScrobbling();
+        $(this).parents('.song').addClass('hide')
+               .bind('webkitTransitionEnd', function() { $(this).remove(); }, false);
+        return false;
+    });
+
+    $('#last-scrobbled .unscrobble').on('click', function() {
+        var timestamp = parseInt($(this).data('timestamp'), 10);
+        var songEl = $(this).parents('.song');
+        songEl.addClass('loading');
+        backgroundPage.storage.removeFromScrobbled(timestamp, function() {
+            songEl.addClass('hide').bind('webkitTransitionEnd', function() {
+                $(this).remove();
+            }, false);
+        });
+        return false;
+    });
 }
 
 

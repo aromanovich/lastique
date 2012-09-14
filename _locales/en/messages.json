@@ -13,5 +13,14 @@
     },
     "authorize": {
         "message": "Authorize"
+    },
+    "from": {
+        "message": "from"
+    },
+    "dontScrobble": {
+        "message": "Don't scrobble"
+    },
+    "unscrobble": {
+        "message": "Unscrobble"
     }
 }

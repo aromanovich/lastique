@@ -13,5 +13,14 @@
     },
     "authorize": {
         "message": "Авторизуй"
-    }
+    },
+    "from": {
+        "message": "из"
+    },
+    "dontScrobble": {
+        "message": "Не скробблить"
+    },
+    "unscrobble": {
+        "message": "Расскробблить"
+    } 
 }

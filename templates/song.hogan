@@ -1,17 +1,29 @@
-<a href="{{trackUrl}}">
-  <img src="{{icon}}" class="icon">
-</a>
+<div class="panels">
+  <div class="panel date">
+    <img src="img/eq.gif" class="now-playing-icon">
+    {{date}}
+    {{#service}}
+      {{i18n.from}}
+      <a href="http://{{service}}">
+        <img src="http://www.google.com/s2/favicons?domain={{service}}"
+             title="{{service}}" class="service-icon">
+      </a>
+    {{/service}}
+  </div>
 
-<a href="{{artistUrl}}">{{artist}}</a> &ndash; <a href="{{trackUrl}}">{{track}}</a>
-
-<span class="date">
-  <img src="img/eq.gif" class="now-playing-icon">
-  {{date}}
-  {{#service}}
-    from
-    <a href="http://{{service}}">
-      <img src="http://www.google.com/s2/favicons?domain={{service}}"
-           title="{{service}}" class="service-icon">
+  <div class="panel actions">
+    <a href="#" class="button unscrobble" data-timestamp="{{timestamp}}">
+      {{#timestamp}}
+        {{i18n.unscrobble}}
+      {{/timestamp}}
+      {{^timestamp}}
+        {{i18n.dontScrobble}}
+      {{/timestamp}}
     </a>
-  {{/service}}
-</span>
+  </div>
+</div>
+
+<div class="info">
+  <a href="{{artistUrl}}" class="artist">
+    {{artist}}</a>&nbsp;&ndash; <wbr><a href="{{trackUrl}}" class="track">{{track}}</a>
+</div>

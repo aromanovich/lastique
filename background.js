@@ -59,6 +59,7 @@ var scrobbler = {
     _song: null,
     _service: null,
     _playedSoFar: 0,
+    _scrobbleCanceled: false,
 
     startedPlaying: function(song, service) {
         if (song.duration < 30) {
@@ -68,16 +69,25 @@ var scrobbler = {
             this._postponedScrobble.execute();
             delete this._postponedScrobble;
         }
+
+        if (this._postponedClearNowPlaying) {
+            this._postponedClearNowPlaying.cancel()
+            delete this._postponedClearNowPlaying;
+        }
         this._song = song;
         this._service = service;
         this._scrobbleThreshold = Math.min(this._song.duration / 2, 4 * 60);
         this._playedSoFar = 0;
+        this._scrobbleCanceled = false;
         this._updateNowPlaying();
     },
 
     continuedPlaying: function(songId) {
         if (!this._song || this._song.id != songId) {
             console.warn('scrobbler error: song changed but `scrobbler.startedPlaying` was not called!');
+            return;
+        }
+        if (this._scrobbleCanceled) {
             return;
         }
         this._playedSoFar += LASTIQUE_UPDATE_INTERVAL_SEC;
@@ -90,32 +100,61 @@ var scrobbler = {
         }
     },
 
+    cancelScrobbling: function(songId) {
+        if (this._postponedClearNowPlaying) {
+            this._postponedClearNowPlaying.execute();
+            delete this._postponedClearNowPlaying;
+        }
+        if (this._postponedScrobble) {
+            this._postponedScrobble.cancel();
+            delete this._postponedScrobble;
+        }
+        this._scrobbleCanceled = true;
+    },
+
     _updateNowPlaying: function() {
+        var currentSongId = this._song.id;
         lastfm.signedCall('POST', {
             method: 'track.updateNowPlaying', 
             artist: this._song.artist,
             track: this._song.track,
             sk: auth.obtainSessionId(true)
-        }, function(response) {});
-        storage.setNowPlaying(this._song.artist, this._song.track, this._service);
+        }, function(response) {
+            if (this._song.id != currentSongId) {
+                // Current song has changed during request time
+                return;
+            }
+            this._song.artist = response.nowplaying.artist['#text'];
+            this._song.track = response.nowplaying.track['#text'];
+            storage.setNowPlaying(this._song.artist, this._song.track, this._service);
+
+            if (!this._postponedClearNowPlaying) {
+                this._postponedClearNowPlaying =
+                        new PostponedFunction(storage.clearNowPlaying.bind(storage));
+            }
+        }, this);
+
         if (this._postponedClearNowPlaying) {
-            this._postponedClearNowPlaying.cancel()
+            this._postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
         }
-        this._postponedClearNowPlaying =
-                new PostponedFunction(storage.clearNowPlaying.bind(storage));
-        this._postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
     },
 
     _scrobble: function() {
         var timestamp = Math.round(new Date().getTime() / 1000);
+
+        var callback = (function(artist, track, timestamp, service) {
+            return function(response) {
+                storage.addToLastScrobbled(artist, track, timestamp, service);
+            }
+        })(this._song.artist, this._song.track, timestamp, this._service);
+
         lastfm.signedCall('POST', {
             method: 'track.scrobble', 
             artist: this._song.artist,
             track: this._song.track,
             timestamp: timestamp,
             sk: auth.obtainSessionId(true)
-        }, function(response) {});
-        storage.addToLastScrobbled(this._song.artist, this._song.track, timestamp, this._service);
+        }, callback, this);
     }
 }
 
@@ -157,16 +196,11 @@ var storage = {
                 track: track
             }, function(response) {
                 var track = response.track;
-                var iconUrl;
-                if (track.album && track.album.image && track.album.image.length) {
-                    iconUrl = track.album.image[0]['#text'].replace('serve/64s', 'serve/34s');
-                }
                 trackData = {
                     track: track.name,
                     trackUrl: track.url,
                     artist: track.artist.name,
-                    artistUrl: track.artist.url,
-                    iconUrl: iconUrl
+                    artistUrl: track.artist.url
                 };
                 cache.add(cacheKey, trackData);
                 callback(trackData);
@@ -194,6 +228,35 @@ var storage = {
             var table = JSON.parse(localStorage.lastScrobbled);
             table.push(trackData);
             localStorage.lastScrobbled = JSON.stringify(table.slice(-20));
+        });
+    },
+
+    removeFromScrobbled: function(timestamp, callback) {
+        if (!localStorage.lastScrobbled) {
+            localStorage.lastScrobbled = JSON.stringify([]);
+        }
+        var scrobbleToRemove, scrobbleToRemoveIndex;
+        var table = JSON.parse(localStorage.lastScrobbled);
+        table.forEach(function(scrobble, index) {
+            if (scrobble.timestamp == timestamp) {
+                scrobbleToRemove = scrobble;
+                scrobbleToRemoveIndex = index;
+            }
+        });
+        if (!scrobbleToRemove) {
+            callback();
+            return;
+        }
+        lastfm.signedCall('POST', {
+            method: 'library.removeScrobble', 
+            artist: scrobbleToRemove.artist,
+            track: scrobbleToRemove.track,
+            timestamp: scrobbleToRemove.timestamp,
+            sk: auth.obtainSessionId(true)
+        }, function(response) {
+            table.splice(scrobbleToRemoveIndex, 1);
+            localStorage.lastScrobbled = JSON.stringify(table.slice(-20));
+            callback();
         });
     }
 }
