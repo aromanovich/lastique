@@ -27,6 +27,12 @@ h1 {
   font-size: 16px;
 } 
 
+.songs {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
 .song {
   position: relative;
   border-bottom: 1px solid #ddd;
@@ -48,10 +54,6 @@ h1 {
   height: 0;
   transition: all .2s ease-in-out;
    -webkit-transition: all .2s ease-in-out;
-}
-
-.song#now-playing {
-  background: #FFFDE0;
 }
 
   .song a {
@@ -95,17 +97,25 @@ h1 {
   .song .service-icon, .song .now-playing-icon {
     vertical-align: middle;
   }
+  
+  .song:last-child {
+    border-bottom: none;
+  }
 
-#last-scrobbled {
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-  #last-scrobbled .now-playing-icon {
+  .song .now-playing-icon {
     display: none;
   }
 
-  #last-scrobbled .song:last-child {
-    border-bottom: none;
-  }
+#now-playing.song {
+  background: #FFFDE0;
+}
+
+#now-playing.song .now-playing-icon {
+  display: inline;
+}
+
+#now-playing.song.loading {
+  background: #F8F2AE;
+  -webkit-transition: background 1s;
+          transition: background 1s;
+}

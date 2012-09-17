@@ -36,15 +36,30 @@ a.button:hover {
 .button:before {
     width: 12px;
     height: 12px;
-    margin: 3px 3px 0px 1px;
+    margin: 3px 1px 0px 1px;
     float: left;
     content: "";
 }
 
-.button.unscrobble:hover:before, .button.dont-scrobble:hover:before {
+.button.unscrobble:hover:before {
     background: url(../img/x_11x11_white.png) 0 0 no-repeat;
 }
 
-.button.unscrobble:before, .button.dont-scrobble:before {
+.button.unscrobble:before {
     background: url(../img/x_11x11_gray.png) 0 0 no-repeat;
+}
+
+.button.love:before {
+    background: url(../img/heart_12x11_gray.png) 0 0 no-repeat;
+}
+
+.button.love:hover:before, .button.love.pressed:before {
+    background: url(../img/heart_12x11_white.png) 0 0 no-repeat;
+}
+
+.button:active, .button.pressed {
+    border-color: #B33130;
+    border-bottom-color: #A02A2A;
+    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#B33030), to(#DC5959));
+    background-image: linear-gradient(#B33030, #DC5959);
 }

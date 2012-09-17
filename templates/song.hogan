@@ -12,7 +12,8 @@
   </div>
 
   <div class="panel actions">
-    <a href="#" class="button unscrobble" data-timestamp="{{timestamp}}">
+    <a href="#" class="button love {{#isLoved}}pressed{{/isLoved}}"></a>
+    <a href="#" class="button unscrobble">
       {{#timestamp}}
         {{i18n.unscrobble}}
       {{/timestamp}}

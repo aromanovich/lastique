@@ -1,17 +1,18 @@
 <h1>{{i18n.hello}}, <a href="http://www.last.fm/user/{{username}}">{{username}}</a>!</h1>
+
 {{#isNothingToShow}}
   {{i18n.isNothingToShow}}
 {{/isNothingToShow}}
 
-{{#nowPlaying}}
-  <div id="now-playing" class="song">
-    {{> song}}
-  </div>
-{{/nowPlaying}}
+<ul class="songs">
+  {{#nowPlaying}}
+    <li id="now-playing" class="song" data-song='{{songData}}'>
+      {{> song}}
+    </li>
+  {{/nowPlaying}}
 
-<ul id="last-scrobbled">
   {{#lastScrobbled}}
-    <li class="song">
+    <li id="{{timestamp}}" class="scrobbled song" data-song='{{songData}}'>
       {{> song}}
     </li>
   {{/lastScrobbled}}

@@ -126,8 +126,8 @@ var scrobbler = {
             }
             this._song.artist = response.nowplaying.artist['#text'];
             this._song.track = response.nowplaying.track['#text'];
-            storage.setNowPlaying(this._song.artist, this._song.track, this._service);
 
+            storage.setNowPlaying(this._song.artist, this._song.track, this._service);
             if (!this._postponedClearNowPlaying) {
                 this._postponedClearNowPlaying =
                         new PostponedFunction(storage.clearNowPlaying.bind(storage));
@@ -179,6 +179,11 @@ var cache = {
 
     get: function(key) {
         return this._cache[key];
+    },
+
+    remove: function(key) {
+        this._keys.splice(this._keys.indexOf(key), 1);
+        delete this._cache[key];
     }
 }
 
@@ -193,14 +198,16 @@ var storage = {
             lastfm.unsignedCall('GET', {
                 method: 'track.getInfo',
                 artist: artist,
-                track: track
+                track: track,
+                username: localStorage.username 
             }, function(response) {
                 var track = response.track;
                 trackData = {
                     track: track.name,
                     trackUrl: track.url,
                     artist: track.artist.name,
-                    artistUrl: track.artist.url
+                    artistUrl: track.artist.url,
+                    isLoved: track.userloved == "1"
                 };
                 cache.add(cacheKey, trackData);
                 callback(trackData);
@@ -216,13 +223,10 @@ var storage = {
     },
 
     clearNowPlaying: function() {
-        delete localStorage.nowPlaying;
+        localStorage.nowPlaying = 'false';
     },
 
     addToLastScrobbled: function(artist, track, timestamp, service) {
-        if (!localStorage.lastScrobbled) {
-            localStorage.lastScrobbled = JSON.stringify([]);
-        }
         this._getTrackInfo(artist, track, function(trackData) {
             $.extend(trackData, {timestamp: timestamp, service: service});
             var table = JSON.parse(localStorage.lastScrobbled);
@@ -231,14 +235,11 @@ var storage = {
         });
     },
 
-    removeFromScrobbled: function(timestamp, callback) {
-        if (!localStorage.lastScrobbled) {
-            localStorage.lastScrobbled = JSON.stringify([]);
-        }
+    removeFromScrobbled: function(songData, callback) {
         var scrobbleToRemove, scrobbleToRemoveIndex;
         var table = JSON.parse(localStorage.lastScrobbled);
         table.forEach(function(scrobble, index) {
-            if (scrobble.timestamp == timestamp) {
+            if (scrobble.timestamp == songData.timestamp) {
                 scrobbleToRemove = scrobble;
                 scrobbleToRemoveIndex = index;
             }
@@ -257,6 +258,39 @@ var storage = {
             table.splice(scrobbleToRemoveIndex, 1);
             localStorage.lastScrobbled = JSON.stringify(table.slice(-20));
             callback();
+        });
+    },
+
+    triggerLove: function(songData, callback) {
+        var table = JSON.parse(localStorage.lastScrobbled);
+        var nowPlaying = JSON.parse(localStorage.nowPlaying);
+
+        var method = songData.isLoved ? 'unlove' : 'love';
+        lastfm.signedCall('POST', {
+            method: 'track.' + method, 
+            artist: songData.artist,
+            track: songData.track,
+            sk: auth.obtainSessionId(true)
+        }, function(response) {
+            var cacheEntry = cache.get(songData.artist + '-' + songData.track);
+            if (cacheEntry) {
+                cacheEntry.isLoved = !cacheEntry.isLoved;
+            }
+
+            table.concat(nowPlaying).forEach(function(scrobble) {
+                if (scrobble.artist == songData.artist && scrobble.track == songData.track) {
+                    scrobble.isLoved = !scrobble.isLoved;
+                    if (scrobble.timestamp) {
+                        callback(scrobble.timestamp);
+                    } else {
+                        callback('now-playing');
+                    }
+                }
+                return scrobble;
+            });
+
+            localStorage.nowPlaying = JSON.stringify(nowPlaying);
+            localStorage.lastScrobbled = JSON.stringify(table.slice(-20));
         });
     }
 }
@@ -330,4 +364,7 @@ var auth = {
 Zepto(function($) {
     auth.obtainSessionId(false);
     storage.clearNowPlaying();
+    if (!localStorage.lastScrobbled) {
+        localStorage.lastScrobbled = JSON.stringify([]);
+    }
 });

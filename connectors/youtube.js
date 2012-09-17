@@ -69,7 +69,7 @@ function sendStartPlaying() {
 }
 
 
-/* Check that video was playing long enough (more than LASTIQUE_UPDATE_INTERVAL_SEC se
+/* Check that video was playing long enough (more than LASTIQUE_UPDATE_INTERVAL_SEC
  * seconds since the last sent `continue_playing` event) and send `continue_playing`. */
 function sendContinuePlaying() {
     if (secondsPlayed < secondsTracked + LASTIQUE_UPDATE_INTERVAL_SEC) {
@@ -86,14 +86,7 @@ function sendContinuePlaying() {
 
 
 function getVideoTitle() {
-    var metaTags = document.getElementsByTagName('meta');
-    for (var i = 0; i < metaTags.length; ++i) {
-        var tag = metaTags.item(i);
-        var property = tag.getAttribute('property');
-        if (property == 'og:title') {
-            return tag.getAttribute('content');           
-        }
-    }
+    return document.querySelector('meta[property="og:title"]').getAttribute('content');
 }
 
 
