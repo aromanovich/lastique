@@ -16,8 +16,6 @@ function getTranslationMap(messageNames) {
 
 
 function renderPopup() {
-    console.log(localStorage.lastScrobbled);
-    console.log(localStorage.nowPlaying);
     var table = JSON.parse(localStorage.lastScrobbled);
     var nowPlaying = JSON.parse(localStorage.nowPlaying);
     var bodyHtml = T.popup.render({
