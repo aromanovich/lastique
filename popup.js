@@ -16,6 +16,8 @@ function getTranslationMap(messageNames) {
 
 
 function renderPopup() {
+    console.log(localStorage.lastScrobbled);
+    console.log(localStorage.nowPlaying);
     var table = JSON.parse(localStorage.lastScrobbled);
     var nowPlaying = JSON.parse(localStorage.nowPlaying);
     var bodyHtml = T.popup.render({
@@ -81,7 +83,7 @@ function renderPopup() {
 }
 
 
-function renderUnauthorizedPopup() {
+function renderUnauthorizedPopup(hui) {
     var a = $('<a href="#" id="authorize"></a>')
             .html(t('authorize') + ' Lastique')
             .on('click', function() {
@@ -99,7 +101,12 @@ Zepto(function($) {
         moment.lang('ru');
     }
 
-    if (localStorage.sessionId || backgroundPage.auth.obtainSessionId(false)) {
+    var sessionId = localStorage.sessionId;
+    if (localStorage.token && !sessionId) {
+        sessionId = backgroundPage.auth.obtainSessionIdFromToken(localStorage.token);
+    }
+    
+    if (sessionId) {
         $(document.body).addClass('authorized');
         renderPopup();
     } else {

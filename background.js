@@ -124,8 +124,14 @@ var scrobbler = {
                 // Current song has changed during request time
                 return;
             }
-            this._song.artist = response.nowplaying.artist['#text'];
-            this._song.track = response.nowplaying.track['#text'];
+            if (response.nowplaying) {
+                if(response.nowplaying.artist) {
+                    this._song.artist = response.nowplaying.artist['#text'] || this._song.artist;
+                }
+                if (response.nowplaying.track) {
+                    this._song.track = response.nowplaying.track['#text'] || this._song.track;
+                }
+            }
 
             storage.setNowPlaying(this._song.artist, this._song.track, this._service);
             if (!this._postponedClearNowPlaying) {
@@ -302,11 +308,12 @@ var auth = {
                 + '?api_key=' + LAST_FM_API_KEY
                 + '&token=' + localStorage.token;
         if (!this.authTabId) {
+            var that = this;
             chrome.tabs.create({url: url}, function(tab) {
-                this.authTabId = tab.id;
+                that.authTabId = tab.id;
                 chrome.tabs.onRemoved.addListener(function(tabId) {
-                    if (this.authTabId == tabId) {
-                        delete this.authTabId;
+                    if (that.authTabId == tabId) {
+                        delete that.authTabId;
                     }
                 });
             });
@@ -356,6 +363,19 @@ var auth = {
                 }
             }).bind(this));
         }
+        return localStorage.sessionId;
+    },
+
+    obtainSessionIdFromToken: function(token) {
+        lastfm.synchronousSignedCall('GET', {
+            method: 'auth.getSession',
+            token: token
+        }, function(response) {
+            if (!response.error) {
+                localStorage.username = response.session.name;
+                localStorage.sessionId = response.session.key;
+            }
+        });
         return localStorage.sessionId;
     }
 }
