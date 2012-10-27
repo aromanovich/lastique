@@ -11,7 +11,7 @@ function compileTemplate(template, callback) {
 }
 
 
-var templates = ['popup', 'song'];
+var templates = ['popup', 'song', 'options'];
 var result = 'T={};';
 var current = 0
 

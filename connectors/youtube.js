@@ -29,6 +29,16 @@ window.onYouTubePlayerReady = function() {
 
 window.onStateChangeHandler = function(newState) {
     if (newState == PLAYING) {
+        if (secondsPlayed == 0) {
+            secondsPlayed += 1;
+        }
+
+        updateInterval = setInterval(function() {
+            var continuedPlaying = getTimestamp();
+            secondsPlayed += (continuedPlaying - lastTimeStartedPlaying);
+            lastTimeStartedPlaying = continuedPlaying;
+        }, 1000);
+
         if (currentState == UNSTARTED || currentState == ENDED) {
             sendStartPlaying();
             setInterval(sendContinuePlaying, LASTIQUE_UPDATE_INTERVAL_SEC * 1000);
@@ -37,12 +47,6 @@ window.onStateChangeHandler = function(newState) {
         if (currentState != PLAYING) {
             lastTimeStartedPlaying = getTimestamp();
         }
-
-        updateInterval = setInterval(function() {
-            var continuedPlaying = getTimestamp();
-            secondsPlayed += (continuedPlaying - lastTimeStartedPlaying);
-            lastTimeStartedPlaying = continuedPlaying;
-        }, 1000);
     } else {
         if (currentState == PLAYING) {
             clearInterval(updateInterval);

@@ -22,5 +22,11 @@
     },
     "unscrobble": {
         "message": "Unscrobble"
+    },
+    "scrobbleFrom": {
+        "message": "Scrobble from"
+    },
+    "optionsNote": {
+        "message": "Settings will take effect after reloading tabs."
     }
 }

@@ -48,6 +48,11 @@ stManager.done = function(f) {
     oldDone.apply(this, arguments);
 }
 
+// If stManager.done() was called already
+if (window.audioPlayer && !audioPlayer.statusExport && !injected) {
+    inject();
+}
+
 function inject() {
     var oldPlayback = audioPlayer.playback;
     audioPlayer.playback = function(paused) {

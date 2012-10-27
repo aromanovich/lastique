@@ -81,10 +81,10 @@ function renderPopup() {
 }
 
 
-function renderUnauthorizedPopup(hui) {
+function renderUnauthorizedPopup() {
     var a = $('<a href="#" id="authorize"></a>')
-            .html(t('authorize') + ' Lastique')
-            .on('click', function() {
+                .html(t('authorize') + ' Lastique')
+                .on('click', function() {
         backgroundPage.auth.obtainSessionId(true);
         return false;
     });

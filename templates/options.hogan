@@ -1,0 +1,19 @@
+<div class="options">
+	<img src="img/logo.png" class="logo">
+	<h2>{{scrobbleFrom}}:</h2>
+	<ul>
+		<li>
+			<label for="vk_com">
+				<input type="checkbox" name="connectors" value="vk.js" id="vk_com">
+		    vk.com
+  		</label>
+		</li>
+		<li>
+			<label for="youtube_com">
+				<input type="checkbox" name="connectors" value="youtube.js" id="youtube_com">
+				youtube.com
+			</label>
+		</li>
+	</ul>
+	<p>{{optionsNote}}</p>
+</div>

@@ -2,11 +2,14 @@ var console = chrome.extension.getBackgroundPage().console;
 var log = console.log.bind(console);
 
 
-function PostponedFunction(f) {
+function PostponedFunction(f, timestamp) {
     var timeoutId = null;
     var executed = false;
+    var t = timestamp;
+    console.log('createpostpone', t)
 
     this.postpone = function(seconds) {
+                            console.log('postpone', t);
         if (!executed) {
             if (timeoutId) {
                 clearTimeout(timeoutId);
@@ -16,6 +19,7 @@ function PostponedFunction(f) {
     }
 
     this.execute = function() {
+        console.log('execute', executed, t)
         if (!executed) {
             f();
             timeoutId = null;
@@ -24,6 +28,7 @@ function PostponedFunction(f) {
     }
 
     this.cancel = function() {
+        console.log("CANCE!", t);
         if (timeoutId) {
             clearTimeout(timeoutId);
         }
@@ -44,17 +49,6 @@ var lastfm = new LastFMClient({
 });
 
 
-chrome.extension.onConnect.addListener(function(port) {
-    port.onMessage.addListener(function(message) {
-        if (message.event == 'start_playing') {
-            scrobbler.startedPlaying(message.song, message.service);
-        } else if (message.event == 'continue_playing') {
-            scrobbler.continuedPlaying(message.song.id);
-        }
-    });
-});
-
-
 var scrobbler = {
     _song: null,
     _service: null,
@@ -69,9 +63,8 @@ var scrobbler = {
             this._postponedScrobble.execute();
             delete this._postponedScrobble;
         }
-
         if (this._postponedClearNowPlaying) {
-            this._postponedClearNowPlaying.cancel()
+            this._postponedClearNowPlaying.cancel();
             delete this._postponedClearNowPlaying;
         }
         this._song = song;
@@ -113,6 +106,7 @@ var scrobbler = {
     },
 
     _updateNowPlaying: function() {
+                    console.log('updateNowPlaying');
         var currentSongId = this._song.id;
         lastfm.signedCall('POST', {
             method: 'track.updateNowPlaying', 
@@ -134,14 +128,17 @@ var scrobbler = {
             }
 
             storage.setNowPlaying(this._song.artist, this._song.track, this._service);
+            var timestamp = Math.round(new Date().getTime() / 1000);
             if (!this._postponedClearNowPlaying) {
                 this._postponedClearNowPlaying =
-                        new PostponedFunction(storage.clearNowPlaying.bind(storage));
+                        new PostponedFunction(storage.clearNowPlaying.bind(storage), timestamp);
+                this._postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
             }
         }, this);
-
+        
         if (this._postponedClearNowPlaying) {
             this._postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
+
         }
     },
 
@@ -235,7 +232,7 @@ var storage = {
     addToLastScrobbled: function(artist, track, timestamp, service) {
         this._getTrackInfo(artist, track, function(trackData) {
             $.extend(trackData, {timestamp: timestamp, service: service});
-            var table = JSON.parse(localStorage.lastScrobbled);
+            var table = JSON.parse(localStorage.lastScrobbled || '[]');
             table.push(trackData);
             localStorage.lastScrobbled = JSON.stringify(table.slice(-20));
         });
@@ -243,7 +240,7 @@ var storage = {
 
     removeFromScrobbled: function(songData, callback) {
         var scrobbleToRemove, scrobbleToRemoveIndex;
-        var table = JSON.parse(localStorage.lastScrobbled);
+        var table = JSON.parse(localStorage.lastScrobbled || '[]');
         table.forEach(function(scrobble, index) {
             if (scrobble.timestamp == songData.timestamp) {
                 scrobbleToRemove = scrobble;
@@ -268,8 +265,8 @@ var storage = {
     },
 
     triggerLove: function(songData, callback) {
-        var table = JSON.parse(localStorage.lastScrobbled);
-        var nowPlaying = JSON.parse(localStorage.nowPlaying);
+        var table = JSON.parse(localStorage.lastScrobbled || '[]');
+        var nowPlaying = JSON.parse(localStorage.nowPlaying || 'false');
 
         var method = songData.isLoved ? 'unlove' : 'love';
         lastfm.signedCall('POST', {
@@ -284,7 +281,9 @@ var storage = {
             }
 
             table.concat(nowPlaying).forEach(function(scrobble) {
-                if (scrobble.artist == songData.artist && scrobble.track == songData.track) {
+                if (scrobble &&
+                    scrobble.artist == songData.artist &&
+                    scrobble.track == songData.track) {
                     scrobble.isLoved = !scrobble.isLoved;
                     if (scrobble.timestamp) {
                         callback(scrobble.timestamp);
@@ -387,4 +386,18 @@ Zepto(function($) {
     if (!localStorage.lastScrobbled) {
         localStorage.lastScrobbled = JSON.stringify([]);
     }
+    if (!localStorage.enabledConnectors) {
+        localStorage.enabledConnectors = JSON.stringify(['vk.js', 'youtube.js']);
+    }
+
+    chrome.extension.onConnect.addListener(function(port) {
+        port.postMessage(JSON.parse(localStorage.enabledConnectors));
+        port.onMessage.addListener(function(message) {
+            if (message.event == 'start_playing') {
+                scrobbler.startedPlaying(message.song, message.service);
+            } else if (message.event == 'continue_playing') {
+                scrobbler.continuedPlaying(message.song.id);
+            }
+        });
+    });
 });

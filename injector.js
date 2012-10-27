@@ -4,23 +4,36 @@ function injectScript(name) {
     document.body.appendChild(script);
 }
 
-injectScript('shared_constants.js');
-injectScript('connectors/utils.js');
 
-var CONNECTORS = {
-    '^https?:\/\/vk.com.*$': 'connectors/vk.js',
-    '^https?:\/\/(www\.)?youtube.com.*$': 'connectors/youtube.js'
+function injectConnector(enabledConnectors) {
+    console.log(enabledConnectors);
+    injectScript('shared_constants.js');
+    injectScript('connectors/utils.js');
+
+    var CONNECTORS = {
+        '^https?:\/\/vk.com.*$': 'vk.js',
+        '^https?:\/\/(www\.)?youtube.com.*$': 'youtube.js'
+    }
+
+    Object.keys(CONNECTORS).forEach(function(path) {
+        var connector = CONNECTORS[path];
+        if (new RegExp(path, 'i').test(window.location) &&
+            enabledConnectors.indexOf(connector) != -1) {
+
+            injectScript('connectors/' + connector);
+        }
+    })
 }
 
-Object.keys(CONNECTORS).forEach(function(path) {
-    if (new RegExp(path, 'i').test(window.location)) {
-        injectScript(CONNECTORS[path]);
-    }
-})
 
 var port = chrome.extension.connect();
+
 window.addEventListener('message', function(event) {
     if (event.data.type == 'lastique') {
         port.postMessage(event.data.payload);
     }
+});
+
+port.onMessage.addListener(function(enabledConnectors) {
+    injectConnector(enabledConnectors);
 });
