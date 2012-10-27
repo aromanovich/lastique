@@ -6,7 +6,6 @@ function injectScript(name) {
 
 
 function injectConnector(enabledConnectors) {
-    console.log(enabledConnectors);
     injectScript('shared_constants.js');
     injectScript('connectors/utils.js');
 

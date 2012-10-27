@@ -6,10 +6,8 @@ function PostponedFunction(f, timestamp) {
     var timeoutId = null;
     var executed = false;
     var t = timestamp;
-    console.log('createpostpone', t)
 
     this.postpone = function(seconds) {
-                            console.log('postpone', t);
         if (!executed) {
             if (timeoutId) {
                 clearTimeout(timeoutId);
@@ -19,7 +17,6 @@ function PostponedFunction(f, timestamp) {
     }
 
     this.execute = function() {
-        console.log('execute', executed, t)
         if (!executed) {
             f();
             timeoutId = null;
@@ -28,7 +25,6 @@ function PostponedFunction(f, timestamp) {
     }
 
     this.cancel = function() {
-        console.log("CANCE!", t);
         if (timeoutId) {
             clearTimeout(timeoutId);
         }
@@ -59,6 +55,7 @@ var scrobbler = {
         if (song.duration < 30) {
             return;
         }
+        
         if (this._postponedScrobble) {
             this._postponedScrobble.execute();
             delete this._postponedScrobble;
@@ -67,12 +64,23 @@ var scrobbler = {
             this._postponedClearNowPlaying.cancel();
             delete this._postponedClearNowPlaying;
         }
+
         this._song = song;
         this._service = service;
         this._scrobbleThreshold = Math.min(this._song.duration / 2, 4 * 60);
         this._playedSoFar = 0;
         this._scrobbleCanceled = false;
         this._updateNowPlaying();
+
+        lastfm.signedCall('GET', {
+            method: 'track.getInfo', 
+            artist: this._song.artist,
+            track: this._song.track,
+        }, function(response) {
+            if ((response.track && !response.track.mbid && response.track.playcount < 75)) {
+                this.cancelScrobbling();
+            }
+        }, this);
     },
 
     continuedPlaying: function(songId) {
@@ -106,7 +114,6 @@ var scrobbler = {
     },
 
     _updateNowPlaying: function() {
-                    console.log('updateNowPlaying');
         var currentSongId = this._song.id;
         lastfm.signedCall('POST', {
             method: 'track.updateNowPlaying', 
@@ -126,19 +133,18 @@ var scrobbler = {
                     this._song.track = response.nowplaying.track['#text'] || this._song.track;
                 }
             }
-
-            storage.setNowPlaying(this._song.artist, this._song.track, this._service);
-            var timestamp = Math.round(new Date().getTime() / 1000);
-            if (!this._postponedClearNowPlaying) {
-                this._postponedClearNowPlaying =
-                        new PostponedFunction(storage.clearNowPlaying.bind(storage), timestamp);
-                this._postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
+            if (!this._scrobbleCanceled) {
+                storage.setNowPlaying(this._song.artist, this._song.track, this._service);
+                if (!this._postponedClearNowPlaying) {
+                    this._postponedClearNowPlaying =
+                            new PostponedFunction(storage.clearNowPlaying.bind(storage));
+                    this._postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
+                }
             }
         }, this);
         
         if (this._postponedClearNowPlaying) {
             this._postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
-
         }
     },
 
