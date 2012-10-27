@@ -61,7 +61,7 @@ var scrobbler = {
             delete this._postponedScrobble;
         }
         if (this._postponedClearNowPlaying) {
-            this._postponedClearNowPlaying.cancel();
+            this._postponedClearNowPlaying.execute();
             delete this._postponedClearNowPlaying;
         }
 
@@ -70,15 +70,16 @@ var scrobbler = {
         this._scrobbleThreshold = Math.min(this._song.duration / 2, 4 * 60);
         this._playedSoFar = 0;
         this._scrobbleCanceled = false;
-        this._updateNowPlaying();
 
         lastfm.signedCall('GET', {
             method: 'track.getInfo', 
             artist: this._song.artist,
             track: this._song.track,
         }, function(response) {
-            if ((response.track && !response.track.mbid && response.track.playcount < 75)) {
+            if (!response.track || (response.track && !response.track.mbid && response.track.playcount < 75)) {
                 this.cancelScrobbling();
+            } else {
+                this._updateNowPlaying();        
             }
         }, this);
     },
