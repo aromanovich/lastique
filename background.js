@@ -2,10 +2,9 @@ var console = chrome.extension.getBackgroundPage().console;
 var log = console.log.bind(console);
 
 
-function PostponedFunction(f, timestamp) {
+function PostponedFunction(f) {
     var timeoutId = null;
     var executed = false;
-    var t = timestamp;
 
     this.postpone = function(seconds) {
         if (!executed) {
@@ -34,6 +33,97 @@ function PostponedFunction(f, timestamp) {
 }
 
 
+function Song(artist, track, duration, service) {
+    var playedSoFar = 0;
+    var scrobbleThreshold = Math.min(duration / 2, 4 * 60);
+    
+    var ended = false;
+    var scrobbleCanceled = false;
+
+    var postponedClearNowPlaying;
+    var postponedScrobble;
+
+    function scrobble() {
+        var timestamp = Math.round(new Date().getTime() / 1000);
+
+        lastfm.signedCall('POST', {
+            method: 'track.scrobble', 
+            artist: artist,
+            track: track,
+            timestamp: timestamp,
+            sk: auth.obtainSessionId(true)
+        }, function(response) {
+            storage.addToLastScrobbled(artist, track, timestamp, service);
+        }, this);
+    }
+
+    function updateNowPlaying() {
+        lastfm.signedCall('POST', {
+            method: 'track.updateNowPlaying', 
+            artist: artist,
+            track: track,
+            sk: auth.obtainSessionId(true)
+        }, function(response) {
+            if (response.nowplaying) {
+                if (response.nowplaying.artist) {
+                    artist = response.nowplaying.artist['#text'] || artist;
+                }
+                if (response.nowplaying.track) {
+                    track = response.nowplaying.track['#text'] || track;
+                }
+            }
+            if (!scrobbleCanceled && !ended) {
+                storage.setNowPlaying(artist, track, service);
+                if (!postponedClearNowPlaying) {
+                    postponedClearNowPlaying = new PostponedFunction(
+                        storage.clearNowPlaying.bind(storage));
+                    postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
+                }
+            }
+        }, this)
+        
+        if (postponedClearNowPlaying) {
+            postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
+        }
+    }
+
+    this.start = function() {
+        this.continue();
+    }
+
+    this.continue = function() {
+        if (scrobbleCanceled || ended) {
+            return;
+        }
+        playedSoFar += LASTIQUE_UPDATE_INTERVAL_SEC;
+        updateNowPlaying();
+        if (playedSoFar > scrobbleThreshold) {
+            if (!postponedScrobble) {
+                postponedScrobble = new PostponedFunction(scrobble);
+            }
+            postponedScrobble.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
+        }
+    }
+
+    this.end = function(options) {
+        if (postponedScrobble) {
+            if (options && options.cancelScrobbling) {
+                postponedScrobble.cancel();
+                scrobbleCanceled = true;
+            } else {
+                postponedScrobble.execute();
+            }
+            delete postponedScrobble;
+        }
+        if (postponedClearNowPlaying) {
+            postponedClearNowPlaying.execute();
+            delete postponedClearNowPlaying;
+        }
+        ended = true;
+    }
+}
+
+
 const LAST_FM_API_KEY = 'db72c405c8e43a7f80d32d714cc12907';
 const LAST_FM_API_SECRET = 'b91a14a2f38b943ff83e3ae308ae606c';
 const LAST_FM_BASE_URL = 'http://ws.audioscrobbler.com/2.0/';
@@ -47,124 +137,46 @@ var lastfm = new LastFMClient({
 
 var scrobbler = {
     _song: null,
-    _service: null,
-    _playedSoFar: 0,
-    _scrobbleCanceled: false,
+    _songId: null,
 
-    startedPlaying: function(song, service) {
-        if (song.duration < 30) {
-            return;
+    started: function(songData, service) {
+        if (this._song) {
+            this._song.end();
         }
-        
-        if (this._postponedScrobble) {
-            this._postponedScrobble.execute();
-            delete this._postponedScrobble;
+        if (songData.duration >= 30) {
+            this.recognize(songData.artist, songData.track, (function() {
+                this._songId = songData.id
+                this._song = new Song(songData.artist, songData.track,
+                                      songData.duration, service);
+                this._song.start();
+            }).bind(this));
         }
-        if (this._postponedClearNowPlaying) {
-            this._postponedClearNowPlaying.execute();
-            delete this._postponedClearNowPlaying;
-        }
-
-        this._song = song;
-        this._service = service;
-        this._scrobbleThreshold = Math.min(this._song.duration / 2, 4 * 60);
-        this._playedSoFar = 0;
-        this._scrobbleCanceled = false;
-
-        lastfm.signedCall('GET', {
-            method: 'track.getInfo', 
-            artist: this._song.artist,
-            track: this._song.track,
-        }, function(response) {
-            if (!response.track || (response.track && !response.track.mbid && response.track.playcount < 75)) {
-                this.cancelScrobbling();
-            } else {
-                this._updateNowPlaying();        
-            }
-        }, this);
     },
 
-    continuedPlaying: function(songId) {
-        if (!this._song || this._song.id != songId) {
-            console.warn('scrobbler error: song changed but `scrobbler.startedPlaying` was not called!');
-            return;
-        }
-        if (this._scrobbleCanceled) {
-            return;
-        }
-        this._playedSoFar += LASTIQUE_UPDATE_INTERVAL_SEC;
-        this._updateNowPlaying();
-        if (this._playedSoFar > this._scrobbleThreshold) {
-            if (!this._postponedScrobble) {
-                this._postponedScrobble = new PostponedFunction(this._scrobble.bind(this));
+    recognize: function(artist, track, callback) {
+        lastfm.signedCall('GET', {
+            method: 'track.getInfo', 
+            artist: artist,
+            track: track,
+        }, function(response) {
+            if (response.track && response.track.mbid &&
+                response.track.playcount > 75) {
+                callback();
             }
-            this._postponedScrobble.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
-        }
+        });
     },
 
     cancelScrobbling: function(songId) {
-        if (this._postponedClearNowPlaying) {
-            this._postponedClearNowPlaying.execute();
-            delete this._postponedClearNowPlaying;
-        }
-        if (this._postponedScrobble) {
-            this._postponedScrobble.cancel();
-            delete this._postponedScrobble;
-        }
-        this._scrobbleCanceled = true;
+        this._song.end({cancelScrobbling: true});
     },
 
-    _updateNowPlaying: function() {
-        var currentSongId = this._song.id;
-        lastfm.signedCall('POST', {
-            method: 'track.updateNowPlaying', 
-            artist: this._song.artist,
-            track: this._song.track,
-            sk: auth.obtainSessionId(true)
-        }, function(response) {
-            if (this._song.id != currentSongId) {
-                // Current song has changed during request time
-                return;
-            }
-            if (response.nowplaying) {
-                if(response.nowplaying.artist) {
-                    this._song.artist = response.nowplaying.artist['#text'] || this._song.artist;
-                }
-                if (response.nowplaying.track) {
-                    this._song.track = response.nowplaying.track['#text'] || this._song.track;
-                }
-            }
-            if (!this._scrobbleCanceled) {
-                storage.setNowPlaying(this._song.artist, this._song.track, this._service);
-                if (!this._postponedClearNowPlaying) {
-                    this._postponedClearNowPlaying =
-                            new PostponedFunction(storage.clearNowPlaying.bind(storage));
-                    this._postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
-                }
-            }
-        }, this);
-        
-        if (this._postponedClearNowPlaying) {
-            this._postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
+    continued: function(songId) {
+        if (!this._song || this._songId != songId) {
+            console.warn('scrobbler error: song changed but' +
+                         '`scrobbler.started` was not called!');
+            return;
         }
-    },
-
-    _scrobble: function() {
-        var timestamp = Math.round(new Date().getTime() / 1000);
-
-        var callback = (function(artist, track, timestamp, service) {
-            return function(response) {
-                storage.addToLastScrobbled(artist, track, timestamp, service);
-            }
-        })(this._song.artist, this._song.track, timestamp, this._service);
-
-        lastfm.signedCall('POST', {
-            method: 'track.scrobble', 
-            artist: this._song.artist,
-            track: this._song.track,
-            timestamp: timestamp,
-            sk: auth.obtainSessionId(true)
-        }, callback, this);
+        this._song.continue();
     }
 }
 
@@ -401,9 +413,9 @@ Zepto(function($) {
         port.postMessage(JSON.parse(localStorage.enabledConnectors));
         port.onMessage.addListener(function(message) {
             if (message.event == 'start_playing') {
-                scrobbler.startedPlaying(message.song, message.service);
+                scrobbler.started(message.song, message.service);
             } else if (message.event == 'continue_playing') {
-                scrobbler.continuedPlaying(message.song.id);
+                scrobbler.continued(message.song.id);
             }
         });
     });

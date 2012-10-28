@@ -14,7 +14,7 @@ var updateInterval;
 var currentState = UNSTARTED;
 
 var secondsTracked = 0;
-var secondsPlayed = 0;
+var secondsPlayed = 1;
 var lastTimeStartedPlaying;
 
 
@@ -29,10 +29,6 @@ window.onYouTubePlayerReady = function() {
 
 window.onStateChangeHandler = function(newState) {
     if (newState == PLAYING) {
-        if (secondsPlayed == 0) {
-            secondsPlayed += 1;
-        }
-
         updateInterval = setInterval(function() {
             var continuedPlaying = getTimestamp();
             secondsPlayed += (continuedPlaying - lastTimeStartedPlaying);
