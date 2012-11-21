@@ -159,8 +159,7 @@ var scrobbler = {
             artist: artist,
             track: track,
         }, function(response) {
-            if (response.track && response.track.mbid &&
-                response.track.playcount > 75) {
+            if (response.track && (response.track.mbid || response.track.playcount > 75)) {
                 callback();
             }
         });
