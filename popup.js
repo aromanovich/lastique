@@ -88,7 +88,8 @@ function renderUnauthorizedPopup() {
         backgroundPage.auth.obtainSessionId(true);
         return false;
     });
-    $(document.body).empty().append(a);
+    var note = $('<p></p>').html(t('authNote'));
+    $(document.body).empty().append(a).append(note);
 }
 
 

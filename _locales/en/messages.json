@@ -28,5 +28,8 @@
     },
     "optionsNote": {
         "message": "Settings will take effect after reloading tabs."
+    },
+    "authNote": {
+        "message": "Please reload all Vk и YouTube tabs after authorization."
     }
 }
