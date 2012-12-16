@@ -15,5 +15,11 @@
 			</label>
 		</li>
 	</ul>
-	<p>{{optionsNote}}</p>
+    <label for="correct-track-names">
+        <input type="checkbox" name="correct-track-names" id="correct-track-names">
+        {{correctTrackNames}}
+        <br>
+        <span class="note">{{{correctTrackNamesNote}}}</span>
+    </label>
+	<p class="note">{{optionsNote}}</p>
 </div>

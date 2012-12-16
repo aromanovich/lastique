@@ -65,9 +65,13 @@ h1 {
   }
 
   .song .info {
-    white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; 
+    text-overflow: ellipsis;
+    height: 36px;
+    padding: 0;
+    position: relative;
+    display: table-cell;
+    vertical-align: middle;
   }
 
   .song .panels {

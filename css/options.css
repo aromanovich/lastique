@@ -23,14 +23,17 @@ label {
 
 input {
   vertical-align: middle;
-  margin: 0;
-  margin-bottom: 2px;
-  margin-right: 3px;
+  margin: 0 3px 2px 0;
+}
+
+label[for=correct-track-names] {
+  margin: 10px 0 5px 3px;
 }
 
 h2 {
   font-size: 12px;
   margin: 0;
+  padding: 0;
 }
 
 ul {
@@ -45,8 +48,11 @@ li {
   line-height: 22px;
 }
 
-p {
-  margin: 0;
-  padding: 0;
+.note {
   color: #999;
+}
+
+p.note {
+  margin: 10px 0 0 0;
+  padding: 0;
 }

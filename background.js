@@ -64,7 +64,7 @@ function Song(artist, track, duration, service) {
             track: track,
             sk: auth.obtainSessionId(true)
         }, function(response) {
-            if (response.nowplaying) {
+            if (response.nowplaying && JSON.parse(localStorage.correctTrackNames)) {
                 if (response.nowplaying.artist) {
                     artist = response.nowplaying.artist['#text'] || artist;
                 }
@@ -124,14 +124,10 @@ function Song(artist, track, duration, service) {
 }
 
 
-const LAST_FM_API_KEY = 'db72c405c8e43a7f80d32d714cc12907';
-const LAST_FM_API_SECRET = 'b91a14a2f38b943ff83e3ae308ae606c';
-const LAST_FM_BASE_URL = 'http://ws.audioscrobbler.com/2.0/';
-
 var lastfm = new LastFMClient({
-    apiKey: LAST_FM_API_KEY,
-    apiSecret: LAST_FM_API_SECRET,
-    apiUrl: LAST_FM_BASE_URL
+    apiKey: 'db72c405c8e43a7f80d32d714cc12907',
+    apiSecret: 'b91a14a2f38b943ff83e3ae308ae606c',
+    apiUrl: 'http://ws.audioscrobbler.com/2.0/'
 });
 
 
@@ -144,12 +140,19 @@ var scrobbler = {
             this._song.end();
         }
         if (songData.duration >= 30) {
-            this.recognize(songData.artist, songData.track, (function() {
+            function startScrobbling() {
                 this._songId = songData.id
                 this._song = new Song(songData.artist, songData.track,
                                       songData.duration, service);
                 this._song.start();
-            }).bind(this));
+            }
+            startScrobbling = startScrobbling.bind(this);
+
+            if (service == 'www.youtube.com') {
+                this.recognize(songData.artist, songData.track, startScrobbling);
+            } else {
+                startScrobbling();
+            }
         }
     },
 
@@ -220,7 +223,8 @@ var storage = {
                 method: 'track.getInfo',
                 artist: artist,
                 track: track,
-                username: localStorage.username 
+                username: localStorage.username,
+                autocorrect: JSON.parse(localStorage.correctTrackNames) ? 1 : 0
             }, function(response) {
                 var track = response.track;
                 trackData = {
@@ -228,8 +232,9 @@ var storage = {
                     trackUrl: track.url,
                     artist: track.artist.name,
                     artistUrl: track.artist.url,
-                    isLoved: track.userloved == "1"
+                    isLoved: track.userloved == '1'
                 };
+
                 cache.add(cacheKey, trackData);
                 callback(trackData);
             });
@@ -322,7 +327,7 @@ var storage = {
 var auth = {
     authorizeToken: function() {
         var url = 'http://www.last.fm/api/auth/'
-                + '?api_key=' + LAST_FM_API_KEY
+                + '?api_key=' + lastfm.apiKey
                 + '&token=' + localStorage.token;
         if (!this.authTabId) {
             var that = this;
@@ -401,11 +406,13 @@ var auth = {
 Zepto(function($) {
     auth.obtainSessionId(false);
     storage.clearNowPlaying();
-    if (!localStorage.lastScrobbled) {
+
+    if (!JSON.parse(localStorage.isNotFirstStarted || 'false')) {
         localStorage.lastScrobbled = JSON.stringify([]);
-    }
-    if (!localStorage.enabledConnectors) {
         localStorage.enabledConnectors = JSON.stringify(['vk.js', 'youtube.js']);
+        localStorage.correctTrackNames = 'true';
+
+        localStorage.isNotFirstStarted = 'true';
     }
 
     chrome.extension.onConnect.addListener(function(port) {

@@ -26,5 +26,5 @@
 
 <div class="info">
   <a href="{{artistUrl}}" class="artist">
-    {{artist}}</a>&nbsp;&ndash; <wbr><a href="{{trackUrl}}" class="track">{{track}}</a>
+    {{artist}}</a>&nbsp;&ndash; <a href="{{trackUrl}}" class="track">{{track}}</a>
 </div>

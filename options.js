@@ -6,7 +6,9 @@ function t(messageName) {
 Zepto(function($) {
     var bodyHtml = T.options.render({
         scrobbleFrom: t('scrobbleFrom'),
-        optionsNote: t('optionsNote')
+        optionsNote: t('optionsNote'),
+        correctTrackNames: t('correctTrackNames'),
+        correctTrackNamesNote: t('correctTrackNamesNote')
     });
     $(document.body).html(bodyHtml);
 
@@ -21,5 +23,13 @@ Zepto(function($) {
             return $(this).val();
         });
         localStorage.enabledConnectors = JSON.stringify(changedEnabledConnectors);
+    });
+    
+    var correctTrackNames = JSON.parse(localStorage.correctTrackNames);
+    var correctTrackNamesCheckbox = $('input[name=correct-track-names]')
+                                        .prop('checked', correctTrackNames);
+    correctTrackNamesCheckbox.change(function() {
+        correctTrackNames = $(this).prop('checked');
+        localStorage.correctTrackNames = JSON.stringify(correctTrackNames);
     });
 });

@@ -29,6 +29,14 @@
     "optionsNote": {
         "message": "Settings will take effect after reloading tabs."
     },
+    "correctTrackNames": {
+        "message": "Correct track names"
+    },
+    "correctTrackNamesNote": {
+        "message": "For example, \"Pink Floydd\" will be scrobbled as \"Pink Floyd\";
+        \"Williams Robbie\" will be scrobbled as \"Robbie Williams\". If you disable this feature,
+        you should <a href=\"http://www.last.fm/settings/website/\">turn off autocorrection on the Last.fm</a> as well."
+    },
     "authNote": {
         "message": "Please reload all Vk и YouTube tabs after authorization."
     }
