@@ -33,7 +33,16 @@ function PostponedFunction(f) {
 }
 
 
-function Song(artist, track, duration, service) {
+var lastfm = new LastFMClient({
+    apiKey: 'db72c405c8e43a7f80d32d714cc12907',
+    apiSecret: 'b91a14a2f38b943ff83e3ae308ae606c',
+    apiUrl: 'http://ws.audioscrobbler.com/2.0/'
+});
+
+
+function Song(id, artist, track, duration, downloadUrl, service) {
+    this.id = id;
+
     var playedSoFar = 0;
     var scrobbleThreshold = Math.min(duration / 2, 4 * 60);
     
@@ -53,7 +62,7 @@ function Song(artist, track, duration, service) {
             timestamp: timestamp,
             sk: auth.obtainSessionId(true)
         }, function(response) {
-            storage.addToLastScrobbled(artist, track, timestamp, service);
+            storage.addToLastScrobbled(artist, track, timestamp, downloadUrl, service);
         }, this);
     }
 
@@ -73,7 +82,7 @@ function Song(artist, track, duration, service) {
                 }
             }
             if (!scrobbleCanceled && !ended) {
-                storage.setNowPlaying(artist, track, service);
+                storage.setNowPlaying(artist, track, downloadUrl, service);
                 if (!postponedClearNowPlaying) {
                     postponedClearNowPlaying = new PostponedFunction(
                         storage.clearNowPlaying.bind(storage));
@@ -124,46 +133,39 @@ function Song(artist, track, duration, service) {
 }
 
 
-var lastfm = new LastFMClient({
-    apiKey: 'db72c405c8e43a7f80d32d714cc12907',
-    apiSecret: 'b91a14a2f38b943ff83e3ae308ae606c',
-    apiUrl: 'http://ws.audioscrobbler.com/2.0/'
-});
-
-
 var scrobbler = {
     _song: null,
-    _songId: null,
 
     started: function(songData, service) {
         if (this._song) {
             this._song.end();
         }
-        if (songData.duration >= 30) {
-            function startScrobbling() {
-                this._songId = songData.id
-                this._song = new Song(songData.artist, songData.track,
-                                      songData.duration, service);
-                this._song.start();
-            }
-            startScrobbling = startScrobbling.bind(this);
+        if (songData.duration < 30) {
+            // Last.fm's song length policy
+            return;
+        }
+        this._song = new Song(
+            songData.id, songData.artist, songData.track,
+            songData.duration, songData.downloadUrl, service);
 
-            if (service == 'www.youtube.com') {
-                this.recognize(songData.artist, songData.track, startScrobbling);
-            } else {
-                startScrobbling();
-            }
+        if (service == 'www.youtube.com') {
+            this._startScrobblingIfRecognized();
+        } else {
+            this._song.start();                
         }
     },
 
-    recognize: function(artist, track, callback) {
+    _startScrobblingIfRecognized: function() {
+        // Starts scrobbling `this._song` only if Last.fm knows such track
+        // (track has MusicBrainz id or listened enough times).
+        var self = this;
         lastfm.signedCall('GET', {
             method: 'track.getInfo', 
-            artist: artist,
-            track: track,
+            artist: this._song.artist,
+            track: this._song.track
         }, function(response) {
             if (response.track && (response.track.mbid || response.track.playcount > 75)) {
-                callback();
+                self._song.start();   
             }
         });
     },
@@ -173,9 +175,7 @@ var scrobbler = {
     },
 
     continued: function(songId) {
-        if (!this._song || this._songId != songId) {
-            console.warn('scrobbler error: song changed but' +
-                         '`scrobbler.started` was not called!');
+        if (!this._song || this._song.id != songId) {
             return;
         }
         this._song.continue();
@@ -241,9 +241,12 @@ var storage = {
         }
     },
 
-    setNowPlaying: function(artist, track, service) {
+    setNowPlaying: function(artist, track, downloadUrl, service) {
         this._getTrackInfo(artist, track, function(trackData) {
-            $.extend(trackData, {service: service});
+            $.extend(trackData, {
+                service: service,
+                downloadUrl: downloadUrl
+            });
             localStorage.nowPlaying = JSON.stringify(trackData);
         });
     },
@@ -252,9 +255,13 @@ var storage = {
         localStorage.nowPlaying = 'false';
     },
 
-    addToLastScrobbled: function(artist, track, timestamp, service) {
+    addToLastScrobbled: function(artist, track, timestamp, downloadUrl, service) {
         this._getTrackInfo(artist, track, function(trackData) {
-            $.extend(trackData, {timestamp: timestamp, service: service});
+            $.extend(trackData, {
+                timestamp: timestamp,
+                downloadUrl: downloadUrl,
+                service: service
+            });
             var table = JSON.parse(localStorage.lastScrobbled || '[]');
             table.push(trackData);
             localStorage.lastScrobbled = JSON.stringify(table.slice(-20));
@@ -329,10 +336,12 @@ var auth = {
         var url = 'http://www.last.fm/api/auth/'
                 + '?api_key=' + lastfm.apiKey
                 + '&token=' + localStorage.token;
-        if (!this.authTabId) {
+        if (!this.authTabId && !this.authTabBeingOpened) {
             var that = this;
+            this.authTabBeingOpened = true;
             chrome.tabs.create({url: url}, function(tab) {
                 that.authTabId = tab.id;
+                this.authTabBeingOpened = false;
                 chrome.tabs.onRemoved.addListener(function(tabId) {
                     if (that.authTabId == tabId) {
                         delete that.authTabId;
@@ -344,8 +353,8 @@ var auth = {
         }
     },
 
-
     obtainToken: function() {
+        var self = this;
         lastfm.synchronousSignedCall('GET', {
             method: 'auth.getToken'
         }, function(response) {
@@ -354,10 +363,9 @@ var auth = {
         return localStorage.token;
     },
 
-
     obtainSessionId: function(requireAuthorizationIfNeeded) {
         if (!localStorage.sessionId) {
-            if (!localStorage.token) {
+            if (!localStorage.token && !this.obtainingStarted) {
                 this.obtainToken();
                 if (requireAuthorizationIfNeeded) {
                     this.authorizeToken();
@@ -401,7 +409,6 @@ var auth = {
         return localStorage.sessionId;
     }
 }
-
 
 Zepto(function($) {
     auth.obtainSessionId(false);

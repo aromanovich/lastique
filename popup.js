@@ -31,6 +31,9 @@ function renderPopup() {
         songData: function() {
             return JSON.stringify(this);
         },
+        filename: function() {
+            return this.artist + '-' + this.track;
+        },
         isNothingToShow: !nowPlaying && table.length == 0,
         nowPlaying: nowPlaying,
         lastScrobbled: table.slice(nowPlaying ? -9 : -10).reverse(),

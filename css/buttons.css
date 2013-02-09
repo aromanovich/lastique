@@ -57,6 +57,15 @@ a.button:hover {
     background: url(../img/heart_12x11_white.png) 0 0 no-repeat;
 }
 
+.button.download:before {
+    background: url(../img/download_9x12_gray.png) 2px -1px no-repeat;
+}
+
+.button.download:hover:before, .button.download.pressed:before {
+    background: url(../img/download_9x12_white.png) 2px -1px no-repeat;
+}
+
+
 .button:active, .button.pressed {
     border-color: #B33130;
     border-bottom-color: #A02A2A;

@@ -21,7 +21,8 @@ function sendStartPlaying() {
             id: currentAudioId(),
             duration: songData[3],
             artist: decodeHtmlEntities(songData[5]),
-            track: decodeHtmlEntities(songData[6])
+            track: decodeHtmlEntities(songData[6]),
+            downloadUrl: songData[2] + '?dl=1'
         }
     });
 }
