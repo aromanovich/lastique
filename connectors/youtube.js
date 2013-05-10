@@ -21,7 +21,7 @@ var lastTimeStartedPlaying;
 /* Get called when YouTube player and API is ready. */
 window.onYouTubePlayerReady = function() {
     if (parse(getVideoTitle())) {
-        player = document.getElementById(window.yt.playerConfig.attrs.id);
+        player = yt.config_.PLAYER_REFERENCE;
         player.addEventListener('onStateChange', 'onStateChangeHandler');
     }
 }
