@@ -130,6 +130,25 @@ function Song(id, artist, track, duration, downloadUrl, service) {
         }
         ended = true;
     }
+
+    this.startIfRecognized = function() {
+        // Start scrobbling only if Last.fm knows this track
+        // (track has MusicBrainz id or listened enough times).
+        var self = this;
+        lastfm.signedCall('GET', {
+            method: 'track.getInfo',
+            artist: artist,
+            track: track
+        }, function(response) {
+            var track = response.track;
+            if (track && (track.mbid != "" || parseInt(track.playcount) > 75)) {
+                self.start();
+            } else {
+                // Prevent further attempts to scrobble this track
+                ended = true;
+            }
+        });
+    }
 }
 
 
@@ -149,25 +168,10 @@ var scrobbler = {
             songData.duration, songData.downloadUrl, service);
 
         if (service == 'www.youtube.com') {
-            this._startScrobblingIfRecognized();
+            this._song.startIfRecognized();
         } else {
             this._song.start();                
         }
-    },
-
-    _startScrobblingIfRecognized: function() {
-        // Starts scrobbling `this._song` only if Last.fm knows such track
-        // (track has MusicBrainz id or listened enough times).
-        var self = this;
-        lastfm.signedCall('GET', {
-            method: 'track.getInfo', 
-            artist: this._song.artist,
-            track: this._song.track
-        }, function(response) {
-            if (response.track && (response.track.mbid || response.track.playcount > 75)) {
-                self._song.start();   
-            }
-        });
     },
 
     cancelScrobbling: function(songId) {
