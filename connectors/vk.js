@@ -27,33 +27,6 @@ function sendStartPlaying() {
     });
 }
 
-
-var oldAjaxPost = ajax.post;
-ajax.post = function(url, data) {
-    if (url == 'audio' && data && data.act == 'audio_status') {
-        sendStartPlaying();
-    }
-    oldAjaxPost.apply(this, arguments);
-}
-
-
-// Inject code in audioPlayer.callback if status export is not enabled
-var injected = false;
-
-var oldDone = stManager.done;
-stManager.done = function(f) {
-    if (window.audioPlayer && !audioPlayer.statusExport && !injected) {
-        inject();
-        injected = true;
-    }
-    oldDone.apply(this, arguments);
-}
-
-// If stManager.done() was called already
-if (window.audioPlayer && !audioPlayer.statusExport && !injected) {
-    inject();
-}
-
 function inject() {
     var oldPlayback = audioPlayer.playback;
     audioPlayer.playback = function(paused) {
@@ -61,5 +34,12 @@ function inject() {
         oldPlayback.apply(this, arguments);
     }
 }
+
+var intervalId = setInterval(function() {
+    if (window.audioPlayer) {
+        inject();
+        clearInterval(intervalId);
+    }
+}, 10);
 
 })();
