@@ -65,7 +65,6 @@ a.button:hover {
     background: url(../img/download_9x12_white.png) 2px -1px no-repeat;
 }
 
-
 .button:active, .button.pressed {
     border-color: #B33130;
     border-bottom-color: #A02A2A;

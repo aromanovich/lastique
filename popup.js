@@ -32,13 +32,13 @@ function renderPopup() {
             return JSON.stringify(this);
         },
         filename: function() {
-            return this.artist + ' - ' + this.track;
+            return this.artist.replace(/\./g, '') + ' - ' + this.track.replace(/\./g, '');
         },
         isNothingToShow: !nowPlaying && table.length == 0,
         nowPlaying: nowPlaying,
         lastScrobbled: table.slice(nowPlaying ? -9 : -10).reverse(),
         i18n: getTranslationMap(['isNothingToShow', 'hello', 'from',
-                'dontScrobble', 'unscrobble'])
+                                 'dontScrobble', 'unscrobble'])
     }, {
         song: T.song
     });
@@ -85,9 +85,8 @@ function renderPopup() {
 
 
 function renderUnauthorizedPopup() {
-    var a = $('<a href="#" id="authorize"></a>')
-                .html(t('authorize') + ' Lastique')
-                .on('click', function() {
+    var a = $('<a href="#" id="authorize"></a>');
+    a.html(t('authorize') + ' Lastique').on('click', function() {
         backgroundPage.auth.obtainSessionId(true);
         return false;
     });

@@ -5,9 +5,15 @@ body {
   margin: 3px 5px;
 }
 
-body.unauthorized { text-align: center; min-width: 180px; margin-top: 10px; }
+body.unauthorized {
+  text-align: center;
+  min-width: 180px;
+  margin-top: 10px;
+}
 
-body.authorized { min-width: 400px; }
+body.authorized {
+  min-width: 400px;
+}
 
 a {
   color: #1b1b1b;
@@ -85,12 +91,17 @@ h1 {
     margin-left: 15px;
   }
 
+    .song .panel.actions .button {
+      float: right;
+      margin-top: 7px;
+      margin-left: 3px;
+    }
+
   .song:hover .panel.date {
     margin-top: -36px;
   }
 
   .song .panel.actions .button {
-    margin-top: 7px;
     height: 16px;
   }
 

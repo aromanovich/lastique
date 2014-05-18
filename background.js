@@ -345,7 +345,7 @@ var auth = {
             this.authTabBeingOpened = true;
             chrome.tabs.create({url: url}, function(tab) {
                 that.authTabId = tab.id;
-                this.authTabBeingOpened = false;
+                that.authTabBeingOpened = false;
                 chrome.tabs.onRemoved.addListener(function(tabId) {
                     if (that.authTabId == tabId) {
                         delete that.authTabId;
@@ -369,7 +369,7 @@ var auth = {
 
     obtainSessionId: function(requireAuthorizationIfNeeded) {
         if (!localStorage.sessionId) {
-            if (!localStorage.token && !this.obtainingStarted) {
+            if (!localStorage.token) {
                 this.obtainToken();
                 if (requireAuthorizationIfNeeded) {
                     this.authorizeToken();
@@ -381,12 +381,11 @@ var auth = {
                 token: localStorage.token
             }, (function(response) {
                 if (response.error) {
+                    delete localStorage.token;
+                    delete localStorage.sessionId;
                     if (response.error == 14 || response.error == 15) {
                         // token has expired or has not been authorized
-                        if (response.error == 15) {
-                            // token has expired
-                            this.obtainToken();
-                        }
+                        this.obtainToken();
                         if (requireAuthorizationIfNeeded) {
                             this.authorizeToken();
                         }

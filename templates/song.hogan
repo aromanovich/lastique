@@ -12,10 +12,6 @@
   </div>
 
   <div class="panel actions">
-    {{#downloadUrl}}
-      <a href="{{downloadUrl}}" download="{{filename}}" class="button download"></a>
-    {{/downloadUrl}}
-    <a href="#" class="button love {{#isLoved}}pressed{{/isLoved}}"></a>
     <a href="#" class="button unscrobble">
       {{#timestamp}}
         {{i18n.unscrobble}}
@@ -24,6 +20,10 @@
         {{i18n.dontScrobble}}
       {{/timestamp}}
     </a>
+    {{#downloadUrl}}
+      <a href="{{downloadUrl}}" download="{{filename}}" class="button download"></a>
+    {{/downloadUrl}}
+    <a href="#" class="button love {{#isLoved}}pressed{{/isLoved}}"></a>
   </div>
 </div>
 
