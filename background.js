@@ -13,7 +13,7 @@ function PostponedFunction(f) {
             }
             timeoutId = setTimeout(this.execute.bind(this), seconds * 1000);
         }
-    }
+    };
 
     this.execute = function() {
         if (!executed) {
@@ -21,7 +21,7 @@ function PostponedFunction(f) {
             timeoutId = null;
             executed = true;
         }
-    }
+    };
 
     this.cancel = function() {
         if (timeoutId) {
@@ -34,8 +34,8 @@ function PostponedFunction(f) {
 
 
 var lastfm = new LastFMClient({
-    apiKey: 'db72c405c8e43a7f80d32d714cc12907',
-    apiSecret: 'b91a14a2f38b943ff83e3ae308ae606c',
+    apiKey: 'be827441ca581ce37f5043b93a40e386',
+    apiSecret: 'c19332ceba3cd92fa08aae9e41c2a0cd',
     apiUrl: 'http://ws.audioscrobbler.com/2.0/'
 });
 
@@ -61,9 +61,9 @@ function Song(id, artist, track, duration, downloadUrl, service) {
             track: track,
             timestamp: timestamp,
             sk: auth.obtainSessionId(true)
-        }, function(response) {
+        }, function successCallback() {
             storage.addToLastScrobbled(artist, track, timestamp, downloadUrl, service);
-        }, this);
+        }, undefined, this);
     }
 
     function updateNowPlaying() {
@@ -89,7 +89,7 @@ function Song(id, artist, track, duration, downloadUrl, service) {
                     postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
                 }
             }
-        }, this)
+        }, undefined, this);
         
         if (postponedClearNowPlaying) {
             postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
@@ -98,7 +98,7 @@ function Song(id, artist, track, duration, downloadUrl, service) {
 
     this.start = function() {
         this.continue();
-    }
+    };
 
     this.continue = function() {
         if (scrobbleCanceled || ended) {
@@ -112,7 +112,7 @@ function Song(id, artist, track, duration, downloadUrl, service) {
             }
             postponedScrobble.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
         }
-    }
+    };
 
     this.end = function(options) {
         if (postponedScrobble) {
@@ -129,7 +129,7 @@ function Song(id, artist, track, duration, downloadUrl, service) {
             delete postponedClearNowPlaying;
         }
         ended = true;
-    }
+    };
 
     this.startIfRecognized = function() {
         // Start scrobbling only if Last.fm knows this track
@@ -184,7 +184,7 @@ var scrobbler = {
         }
         this._song.continue();
     }
-}
+};
 
 
 var cache = {
@@ -213,7 +213,7 @@ var cache = {
         this._keys.splice(this._keys.indexOf(key), 1);
         delete this._cache[key];
     }
-}
+};
 
 
 var storage = {
@@ -229,7 +229,7 @@ var storage = {
                 track: track,
                 username: localStorage.username,
                 autocorrect: JSON.parse(localStorage.correctTrackNames) ? 1 : 0
-            }, function(response) {
+            }, function successCallback(response) {
                 var track = response.track;
                 trackData = {
                     track: track.name,
@@ -332,7 +332,7 @@ var storage = {
             localStorage.lastScrobbled = JSON.stringify(table.slice(-20));
         });
     }
-}
+};
 
 
 var auth = {
@@ -358,10 +358,9 @@ var auth = {
     },
 
     obtainToken: function() {
-        var self = this;
         lastfm.synchronousSignedCall('GET', {
             method: 'auth.getToken'
-        }, function(response) {
+        }, function successCallback(response) {
             localStorage.token = response.token;
         });
         return localStorage.token;
@@ -379,22 +378,40 @@ var auth = {
             lastfm.synchronousSignedCall('GET', {
                 method: 'auth.getSession',
                 token: localStorage.token
-            }, (function(response) {
+            }, function successCallback(response) {
+                if (response instanceof XMLHttpRequest) {
+                    try {
+                        response = JSON.parse(response.responseText);
+                    } catch (e) {
+                    }
+                }
+                if (response.session) {
+                    localStorage.username = response.session.name;
+                    localStorage.sessionId = response.session.key;
+                } else {
+                    console.error('"session" is missing from response:', response);
+                }
+            }, function errorCallback(response) {
+                if (response instanceof XMLHttpRequest) {
+                    try {
+                        response = JSON.parse(response.responseText);
+                    } catch (e) {
+                    }
+                }
                 if (response.error) {
                     delete localStorage.token;
                     delete localStorage.sessionId;
-                    if (response.error == 14 || response.error == 15) {
-                        // token has expired or has not been authorized
+                    if (response.error == 4 || response.error == 14 || response.error == 15) {
+                        // token has expired or has not been authorized or just invalid
                         this.obtainToken();
                         if (requireAuthorizationIfNeeded) {
                             this.authorizeToken();
                         }
                     }
                 } else {
-                    localStorage.username = response.session.name;
-                    localStorage.sessionId = response.session.key;
+                    console.error('"error" is missing from response:', response);
                 }
-            }).bind(this));
+            }, this);
         }
         return localStorage.sessionId;
     },
@@ -403,7 +420,7 @@ var auth = {
         lastfm.synchronousSignedCall('GET', {
             method: 'auth.getSession',
             token: token
-        }, function(response) {
+        }, function successCallback(response) {
             if (!response.error) {
                 localStorage.username = response.session.name;
                 localStorage.sessionId = response.session.key;
@@ -411,7 +428,7 @@ var auth = {
         });
         return localStorage.sessionId;
     }
-}
+};
 
 Zepto(function($) {
     auth.obtainSessionId(false);
@@ -421,7 +438,6 @@ Zepto(function($) {
         localStorage.lastScrobbled = JSON.stringify([]);
         localStorage.enabledConnectors = JSON.stringify(['vk.js', 'youtube.js']);
         localStorage.correctTrackNames = 'true';
-
         localStorage.isNotFirstStarted = 'true';
     }
 

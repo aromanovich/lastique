@@ -11,43 +11,46 @@ LastFMClient.prototype._getApiSignature = function(data) {
         return prev + key + data[key];
     }, '');
     return md5(nameValueString + this.apiSecret);
-}
+};
 
 
-LastFMClient.prototype._call = function(type, data, callback, context, async) {
+LastFMClient.prototype._call = function(type, data, successCallback, errorCallback, context, async) {
     data.format = 'json';
+    if (!errorCallback) {
+        errorCallback = function(data) {
+            console.error('Something went wrong:', data);
+        };
+    }
     $.ajax({
         type: type,
         url: this.apiUrl,
         data: data,
         dataType: 'json',
         async: async,
-        success: context ? callback.bind(context) : callback,
-        error: function(data) {
-            console.log('Something went wrong', data);
-        }
+        success: context ? successCallback.bind(context) : successCallback,
+        error: context ? errorCallback.bind(context) : errorCallback
     });
-}
+};
 
 
-LastFMClient.prototype._signedCall = function(type, data, callback, context, async) {
+LastFMClient.prototype._signedCall = function(type, data, callback, errorCallback, context, async) {
     data.api_key = this.apiKey;
     data.api_sig = this._getApiSignature(data);
-    this._call(type, data, callback, context, async);
-}
-
-
-LastFMClient.prototype.synchronousSignedCall = function(type, data, callback, context) {
-    this._signedCall(type, data, callback, context, false);
+    this._call(type, data, callback, errorCallback, context, async);
 };
 
 
-LastFMClient.prototype.signedCall = function(type, data, callback, context) {
-    this._signedCall(type, data, callback, context, true);
+LastFMClient.prototype.synchronousSignedCall = function(type, data, callback, errorCallback, context) {
+    this._signedCall(type, data, callback, errorCallback, context, false);
 };
 
 
-LastFMClient.prototype.unsignedCall = function(type, data, callback, context) {
+LastFMClient.prototype.signedCall = function(type, data, callback, errorCallback, context) {
+    this._signedCall(type, data, callback, errorCallback, context, true);
+};
+
+
+LastFMClient.prototype.unsignedCall = function(type, data, callback, errorCallback, context) {
     data.api_key = this.apiKey;
-    this._call(type, data, callback, context, true);
-}
+    this._call(type, data, callback, errorCallback, context, true);
+};
