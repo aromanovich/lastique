@@ -28,6 +28,12 @@
 </div>
 
 <div class="info">
-  <a href="{{artistUrl}}" class="artist">
-    {{artist}}</a>&nbsp;&ndash; <a href="{{trackUrl}}" class="track">{{track}}</a>
+  {{#unknownTrack}}
+    <span class="artist">
+      {{artist}}</span>&nbsp;&ndash; <span class="track">{{track}}</span>
+  {{/unknownTrack}}
+  {{^unknownTrack}}
+    <a href="{{artistUrl}}" class="artist">
+      {{artist}}</a>&nbsp;&ndash; <a href="{{trackUrl}}" class="track">{{track}}</a>
+  {{/unknownTrack}}
 </div>

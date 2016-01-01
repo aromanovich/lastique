@@ -104,7 +104,11 @@ Zepto(function($) {
 
     var sessionId = localStorage.sessionId;
     if (localStorage.token && !sessionId) {
-        sessionId = backgroundPage.auth.obtainSessionIdFromToken(localStorage.token);
+        backgroundPage.auth.obtainSessionIdFromToken(localStorage.token, function successCallback(username, sId) {
+            sessionId = sId;
+        }, function errorCallback(error, message) {
+            sessionId = undefined;
+        });
     }
     
     if (sessionId) {

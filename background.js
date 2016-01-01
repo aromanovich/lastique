@@ -55,23 +55,35 @@ function Song(id, artist, track, duration, downloadUrl, service) {
     function scrobble() {
         var timestamp = Math.round(new Date().getTime() / 1000);
 
+        var sessionId = auth.obtainSessionId(true);
+        if (!sessionId) {
+            return;
+        }
+
         lastfm.signedCall('POST', {
             method: 'track.scrobble', 
             artist: artist,
             track: track,
             timestamp: timestamp,
-            sk: auth.obtainSessionId(true)
-        }, function successCallback() {
+            sk: sessionId
+        }, function success() {
             storage.addToLastScrobbled(artist, track, timestamp, downloadUrl, service);
-        }, undefined, this);
+        }, undefined, function deauth() {
+            auth.deauthenticate();
+        }, this);
     }
 
     function updateNowPlaying() {
+        var sessionId = auth.obtainSessionId(true);
+        if (!sessionId) {
+            return;
+        }
+
         lastfm.signedCall('POST', {
             method: 'track.updateNowPlaying', 
             artist: artist,
             track: track,
-            sk: auth.obtainSessionId(true)
+            sk: sessionId
         }, function(response) {
             if (response.nowplaying && JSON.parse(localStorage.correctTrackNames)) {
                 if (response.nowplaying.artist) {
@@ -89,7 +101,9 @@ function Song(id, artist, track, duration, downloadUrl, service) {
                     postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
                 }
             }
-        }, undefined, this);
+        }, undefined, function deauth() {
+            auth.deauthenticate();
+        }, this);
         
         if (postponedClearNowPlaying) {
             postponedClearNowPlaying.postpone(LASTIQUE_UPDATE_INTERVAL_SEC + 3);
@@ -147,6 +161,8 @@ function Song(id, artist, track, duration, downloadUrl, service) {
                 // Prevent further attempts to scrobble this track
                 ended = true;
             }
+        }, undefined, function deauth(response) {
+            this.deauthenticate();
         });
     }
 }
@@ -230,15 +246,29 @@ var storage = {
                 username: localStorage.username,
                 autocorrect: JSON.parse(localStorage.correctTrackNames) ? 1 : 0
             }, function successCallback(response) {
-                var track = response.track;
+                var t = response.track;
                 trackData = {
-                    track: track.name,
-                    trackUrl: track.url,
-                    artist: track.artist.name,
-                    artistUrl: track.artist.url,
-                    isLoved: track.userloved == '1'
+                    track: t.name,
+                    trackUrl: t.url,
+                    artist: t.artist.name,
+                    artistUrl: t.artist.url,
+                    isLoved: t.userloved == '1',
+                    unknownTrack: false
                 };
-
+                cache.add(cacheKey, trackData);
+                callback(trackData);
+            }, function error(response) {
+                if (response.error) {
+                    log('track.getInfo returned error #' + response.error + ' : ' + response.message);
+                    trackData = {
+                        track: track,
+                        trackUrl: null,
+                        artist: artist,
+                        artistUrl: null,
+                        isLoved: false,
+                        unknownTrack: true
+                    };
+                }
                 cache.add(cacheKey, trackData);
                 callback(trackData);
             });
@@ -285,16 +315,24 @@ var storage = {
             callback();
             return;
         }
+
+        var sessionId = auth.obtainSessionId(true);
+        if (!sessionId) {
+            return;
+        }
+
         lastfm.signedCall('POST', {
             method: 'library.removeScrobble', 
             artist: scrobbleToRemove.artist,
             track: scrobbleToRemove.track,
             timestamp: scrobbleToRemove.timestamp,
-            sk: auth.obtainSessionId(true)
-        }, function(response) {
+            sk: sessionId
+        }, function success() {
             table.splice(scrobbleToRemoveIndex, 1);
             localStorage.lastScrobbled = JSON.stringify(table.slice(-20));
             callback();
+        }, undefined, function deauth(response) {
+            this.deauthenticate();
         });
     },
 
@@ -302,13 +340,18 @@ var storage = {
         var table = JSON.parse(localStorage.lastScrobbled || '[]');
         var nowPlaying = JSON.parse(localStorage.nowPlaying || 'false');
 
+        var sessionId = auth.obtainSessionId(true);
+        if (!sessionId) {
+            return;
+        }
+
         var method = songData.isLoved ? 'unlove' : 'love';
         lastfm.signedCall('POST', {
             method: 'track.' + method, 
             artist: songData.artist,
             track: songData.track,
-            sk: auth.obtainSessionId(true)
-        }, function(response) {
+            sk: sessionId
+        }, function success(response) {
             var cacheEntry = cache.get(songData.artist + '-' + songData.track);
             if (cacheEntry) {
                 cacheEntry.isLoved = !cacheEntry.isLoved;
@@ -330,12 +373,20 @@ var storage = {
 
             localStorage.nowPlaying = JSON.stringify(nowPlaying);
             localStorage.lastScrobbled = JSON.stringify(table.slice(-20));
+        }, undefined, function deauth(response) {
+            this.deauthenticate();
         });
     }
 };
 
 
 var auth = {
+    deauthenticate: function() {
+        delete localStorage.token;
+        delete localStorage.username;
+        delete localStorage.sessionId;
+    },
+
     authorizeToken: function() {
         var url = 'http://www.last.fm/api/auth/'
                 + '?api_key=' + lastfm.apiKey
@@ -360,48 +411,43 @@ var auth = {
     obtainToken: function() {
         lastfm.synchronousSignedCall('GET', {
             method: 'auth.getToken'
-        }, function successCallback(response) {
+        }, function success(response) {
             localStorage.token = response.token;
+        }, undefined, function deauth(response) {
+            this.deauthenticate();
         });
         return localStorage.token;
     },
 
     obtainSessionId: function(requireAuthorizationIfNeeded) {
         if (!localStorage.sessionId) {
+            if (this.authTabBeingOpened || this.authTabId) {
+                return false;
+            }
             if (!localStorage.token) {
                 this.obtainToken();
                 if (requireAuthorizationIfNeeded) {
                     this.authorizeToken();
+                    return false;
                 }
-                return false;
             }
             lastfm.synchronousSignedCall('GET', {
                 method: 'auth.getSession',
                 token: localStorage.token
-            }, function successCallback(response) {
-                if (response instanceof XMLHttpRequest) {
-                    try {
-                        response = JSON.parse(response.responseText);
-                    } catch (e) {
-                    }
-                }
+            }, function success(response) {
                 if (response.session) {
                     localStorage.username = response.session.name;
                     localStorage.sessionId = response.session.key;
+                    delete localStorage.token;
                 } else {
                     console.error('"session" is missing from response:', response);
                 }
-            }, function errorCallback(response) {
-                if (response instanceof XMLHttpRequest) {
-                    try {
-                        response = JSON.parse(response.responseText);
-                    } catch (e) {
-                    }
-                }
+            }, undefined, function deauth(response) {
                 if (response.error) {
-                    delete localStorage.token;
-                    delete localStorage.sessionId;
-                    if (response.error == 4 || response.error == 14 || response.error == 15) {
+                    var AUTHENTICATION_FAILED = 4;  // Authentication Failed - You do not have permissions to access the service
+                    var UNAUTHORIZED_TOKEN = 14;  // Unauthorized Token - This token has not been authorized
+                    if (response.error == AUTHENTICATION_FAILED || response.error == UNAUTHORIZED_TOKEN) {
+                        delete localStorage.token;
                         // token has expired or has not been authorized or just invalid
                         this.obtainToken();
                         if (requireAuthorizationIfNeeded) {
@@ -416,17 +462,20 @@ var auth = {
         return localStorage.sessionId;
     },
 
-    obtainSessionIdFromToken: function(token) {
+    obtainSessionIdFromToken: function(token, successCallback, errorCallback) {
         lastfm.synchronousSignedCall('GET', {
             method: 'auth.getSession',
             token: token
-        }, function successCallback(response) {
-            if (!response.error) {
-                localStorage.username = response.session.name;
-                localStorage.sessionId = response.session.key;
-            }
-        });
-        return localStorage.sessionId;
+        }, function success(response) {
+            localStorage.username = response.session.name;
+            localStorage.sessionId = response.session.key;
+            successCallback(localStorage.username, localStorage.sessionId);
+        }, function error(response) {
+            errorCallback(response);
+        }, function deauth(response) {
+            this.deauthenticate();
+            errorCallback(response);
+        }, this);
     }
 };
 

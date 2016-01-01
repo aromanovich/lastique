@@ -12,7 +12,7 @@ function injectConnector(enabledConnectors) {
     var CONNECTORS = {
         '^https?:\/\/vk.com.*$': 'vk.js',
         '^https?:\/\/(www\.)?youtube.com.*$': 'youtube.js'
-    }
+    };
 
     Object.keys(CONNECTORS).forEach(function(path) {
         var connector = CONNECTORS[path];
