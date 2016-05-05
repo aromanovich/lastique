@@ -10,7 +10,7 @@ function injectConnector(enabledConnectors) {
     injectScript('connectors/utils.js');
 
     var CONNECTORS = {
-        '^https?:\/\/vk.com.*$': 'vk.js',
+        '^https?:\/\/(new\.)?vk.com.*$': 'vk.js',
         '^https?:\/\/(www\.)?youtube.com.*$': 'youtube.js'
     };
 
