@@ -33,8 +33,7 @@
         "message": "Корректировать имена треков"
     },
     "correctTrackNamesNote": {
-        "message": "«Pink Floydd», например, будет скробблиться как «Pink Floyd»; Williams Robbie -- как «Robbie Williams».
-        При отключении этой возможности также стоит <a href=\"http://www.last.fm/settings/website/\">отключить автокоррецию в настройках Last.fm</a>."
+        "message": "«Pink Floydd», например, будет скробблиться как «Pink Floyd»; «Williams Robbie» -- как «Robbie Williams». При отключении этой возможности также стоит <a href=\"http://www.last.fm/settings/website/\">отключить автокоррецию в настройках Last.fm</a>."
     },
     "authNote": {
         "message": "После авторизации необходимо перезапустить вкладки с Vk и YouTube."
