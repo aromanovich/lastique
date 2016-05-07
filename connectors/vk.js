@@ -1,7 +1,7 @@
 (function() {
 
 setInterval(function() {
-    if (getAudioPlayer) {
+    if (window.getAudioPlayer) {
         /* new vk.com design */
         var player = getAudioPlayer && getAudioPlayer();
         if (player && player.isPlaying()) {
@@ -30,7 +30,7 @@ setInterval(function() {
 
 function sendStartPlaying() {
     var data;
-    if (getAudioPlayer) {
+    if (window.getAudioPlayer) {
         /* new vk.com design */
         var player = getAudioPlayer && getAudioPlayer();
         var songData = player.getCurrentAudio();
@@ -67,7 +67,7 @@ function sendStartPlaying() {
 }
 
 function inject() {
-    if (getAudioPlayer) {
+    if (window.getAudioPlayer) {
         /* new vk.com design */
         var player = getAudioPlayer && getAudioPlayer();
         if (player._implPlay && player._implNewTask) {
@@ -98,7 +98,7 @@ function inject() {
 }
 
 var intervalId = setInterval(function() {
-    if (getAudioPlayer && getAudioPlayer()) {
+    if (window.getAudioPlayer && getAudioPlayer()) {
         /* new vk.com design */
         inject();
         clearInterval(intervalId);
