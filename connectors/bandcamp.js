@@ -59,6 +59,8 @@ function getCurrentTrackInfo() {
 
 function getViewType() {
     var path = window.location.pathname.split("/")[1];
+    if (!path) // in case of default album
+        return ViewType.Album;        
     if (path == "album")
         return ViewType.Album;
     if (path == "track")
