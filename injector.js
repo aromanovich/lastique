@@ -11,7 +11,8 @@ function injectConnector(enabledConnectors) {
 
     var CONNECTORS = {
         '^https?:\/\/(new\.)?vk.com.*$': 'vk.js',
-        '^https?:\/\/(www\.)?youtube.com.*$': 'youtube.js'
+        '^https?:\/\/(www\.)?youtube.com.*$': 'youtube.js',
+        '^https?:\/\/[^.]+\\.bandcamp.com.*$': 'bandcamp.js',
     };
 
     Object.keys(CONNECTORS).forEach(function(path) {

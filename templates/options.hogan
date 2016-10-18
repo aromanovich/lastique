@@ -14,6 +14,12 @@
 				youtube.com
 			</label>
 		</li>
+		<li>
+			<label for="bandcamp_com">
+				<input type="checkbox" name="connectors" value="bandcamp.js" id="bandcamp_com">
+				bandcamp.com
+			</label>
+		</li>
 	</ul>
     <label for="correct-track-names">
         <input type="checkbox" name="correct-track-names" id="correct-track-names">
