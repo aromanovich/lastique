@@ -23,8 +23,8 @@ function sendStartPlaying() {
     
     lastNotificationTime = getTimestamp();
 
-    console.log("sendStartPlaying: " + "id: " + getId() + "; artist: " + getArtist() + "; track: " + getTrack());
     var info = getCurrentTrackInfo();
+    console.log("sendStartPlaying: " + "id: " + info.id + "; artist: " + info.artist + "; track: " + info.track);
     sendToBackground({
         event: "start_playing",
         service: "bandcamp.com",
@@ -38,7 +38,7 @@ function sendContinuePlaying() {
 
     lastNotificationTime = getTimestamp();
 
-    console.log("sendContinuePlaying: " + "id: " + getId() + "; artist: " + getArtist() + "; track: " + getTrack());
+    console.log("sendStartPlaying: " + "id: " + getId());
     sendToBackground({
         event: "continue_playing",
         song: {
@@ -48,13 +48,19 @@ function sendContinuePlaying() {
 }
 
 function getCurrentTrackInfo() {
-    return {
+    var info = {
         id: getId(),
         duration: getDuration(),
-        artist: getArtist(),
-        track: getTrack(),
-        downloadUrl: getDownloadUrl()
-    };
+        downloadUrl: getDownloadUrl()        
+    }
+
+    var track = getTrack();
+    if (!tryGetCompilationArtistAndTrack(track, info)) {        
+        info.artist = getArtist();
+        info.track = track;
+    }
+
+    return info;
 }
 
 function getViewType() {
@@ -65,6 +71,27 @@ function getViewType() {
         return ViewType.Album;
     if (path == "track")
         return ViewType.Track;
+}
+
+function tryGetCompilationArtistAndTrack(track, resultObj) {
+    if (getViewType() != ViewType.Album)
+        return false;
+
+    var result = true;
+    var delimiter = " - "
+    $("#track_table .title span[itemprop='name']").each(function() {
+        var title = $(this).text();
+        if (title.indexOf(delimiter) == -1)
+            result = false;
+    });
+
+    if (result && typeof(resultObj) === "object") {
+        var pos = track.indexOf(delimiter);
+        resultObj.artist = track.substr(0, pos);
+        resultObj.track = track.substr(pos + 3);
+    }
+
+    return result;
 }
 
 function getId() {    
