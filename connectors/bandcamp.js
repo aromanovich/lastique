@@ -2,7 +2,7 @@
 
 var lastNotificationTime = 0;
 
-function inject(audio) {
+function bind(audio) {
     if (!$) return;
 
     audio.bind("play", function() {
@@ -40,7 +40,7 @@ function sendContinuePlaying(audio) {
 
     lastNotificationTime = getTimestamp();
 
-    // console.log("sendStartPlaying: " + "id: " + getId(audio));
+    // console.log("sendContinuePlaying: " + "id: " + getId(audio));
     sendToBackground({
         event: "continue_playing",
         song: {
@@ -121,19 +121,34 @@ function getTrack() {
         return $(".track_info .title").text().trim();
     if (viewType == ViewType.Track)
         return $("#name-section .trackTitle").text().trim();
-    if (viewType == ViewType.Discover)
-        return $(".detail-player .track_info .title-section").text().trim();
+    if (viewType == ViewType.Discover) {
+        var defaultPlayerPlaying = $(".detail-player .playing,.busy").parents(".discover-detail-inner");
+        if (defaultPlayerPlaying.length)
+            return defaultPlayerPlaying.find(".track_info .title-section").text().trim();
+
+        var notableItemPlaying = $("#notable .result-current a.playing .plb-btn").parents("div.notable-item");
+        if (notableItemPlaying.length)
+            return notableItemPlaying.find(".item-title span").first().text().trim();
+    }
 }
 
 function getArtist() {
     var viewType = getViewType();    
-    if (viewType == ViewType.Discover)
-        return $(".detail-artist a").text().trim();
 
     if (viewType == ViewType.Album || viewType == ViewType.Track) {
         var bandName = $("#band-name-location .title").text();
         var byArtist = $("span[itemprop=byArtist]").text();
         return (bandName || byArtist).trim();
+    }
+
+    if (viewType == ViewType.Discover) {
+        var defaultPlayerPlaying = $(".detail-player .busy,.playing").parents(".discover-detail-inner");
+        if (defaultPlayerPlaying.length)
+            return defaultPlayerPlaying.find(".detail-body .detail-artist a").text().trim();
+
+        var notableItemPlaying = $("#notable .result-current a.playing .plb-btn").parents("div.notable-item");
+        if (notableItemPlaying.length)
+            return notableItemPlaying.find(".item-title .item-artist span").first().text().trim();
     }
 }
 
@@ -144,9 +159,11 @@ function getDownloadUrl(audio) {
 var ViewType = { Album : 0, Track : 1, Discover : 2 };
 
 var viewType = getViewType();
-if (viewType != ViewType.Discover)
-    inject($("audio").first());
-else
-    $(document).ajaxComplete(function() { inject($("audio").eq(2)); });
-
+if (viewType == ViewType.Album || viewType == ViewType.Track)
+    bind($("audio").first());
+if (viewType == ViewType.Discover)
+    $(document).ajaxComplete(function() { 
+        bind($("audio").eq(1));
+        bind($("audio").eq(2));
+    });
 })();
