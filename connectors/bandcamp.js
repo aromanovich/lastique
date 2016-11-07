@@ -65,21 +65,21 @@ function getCurrentTrackInfo(audio) {
     return info;
 }
 
-function getViewType() {
+function getMode() {
     if (window.location.hostname == "bandcamp.com")
-        return ViewType.Discover;
+        return Mode.Discover;
 
     var path = window.location.pathname.split("/")[1];
     if (!path) // in case of default album
-        return ViewType.Album;        
+        return Mode.Album;        
     if (path == "album")
-        return ViewType.Album;
+        return Mode.Album;
     if (path == "track")
-        return ViewType.Track;
+        return Mode.Track;
 }
 
 function tryGetCompilationArtistAndTrack(track, resultObj) {
-    if (getViewType() != ViewType.Album)
+    if (getMode() != Mode.Album)
         return false;
 
     var result = true;
@@ -116,12 +116,12 @@ function getDuration(audio) {
 }
 
 function getTrack() {
-    var viewType = getViewType();
-    if (viewType == ViewType.Album)
+    var mode = getMode();
+    if (mode == Mode.Album)
         return $(".track_info .title").text().trim();
-    if (viewType == ViewType.Track)
+    if (mode == Mode.Track)
         return $("#name-section .trackTitle").text().trim();
-    if (viewType == ViewType.Discover) {
+    if (mode == Mode.Discover) {
         var defaultPlayerPlaying = $(".detail-player .playing,.busy").parents(".discover-detail-inner");
         if (defaultPlayerPlaying.length)
             return defaultPlayerPlaying.find(".track_info .title-section").text().trim();
@@ -133,15 +133,15 @@ function getTrack() {
 }
 
 function getArtist() {
-    var viewType = getViewType();    
+    var mode = getMode();    
 
-    if (viewType == ViewType.Album || viewType == ViewType.Track) {
+    if (mode == Mode.Album || mode == Mode.Track) {
         var bandName = $("#band-name-location .title").text();
         var byArtist = $("span[itemprop=byArtist]").text();
         return (bandName || byArtist).trim();
     }
 
-    if (viewType == ViewType.Discover) {
+    if (mode == Mode.Discover) {
         var defaultPlayerPlaying = $(".detail-player .busy,.playing").parents(".discover-detail-inner");
         if (defaultPlayerPlaying.length)
             return defaultPlayerPlaying.find(".detail-body .detail-artist a").text().trim();
@@ -156,12 +156,12 @@ function getDownloadUrl(audio) {
     return audio.attr("src");
 }
 
-var ViewType = { Album : 0, Track : 1, Discover : 2 };
+var Mode = { Album : 0, Track : 1, Discover : 2 };
 
-var viewType = getViewType();
-if (viewType == ViewType.Album || viewType == ViewType.Track)
+var mode = getMode();
+if (mode == Mode.Album || mode == Mode.Track)
     bind($("audio").first());
-if (viewType == ViewType.Discover)
+if (mode == Mode.Discover)
     $(document).ajaxComplete(function() { 
         bind($("audio").eq(1));
         bind($("audio").eq(2));
