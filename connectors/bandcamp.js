@@ -70,9 +70,7 @@ function getMode() {
         return Mode.Discover;
 
     var path = window.location.pathname.split("/")[1];
-    if (!path) // in case of default album
-        return Mode.Album;
-    if (path == "album")
+    if (!path || path == "album" || path == "releases")
         return Mode.Album;
     if (path == "track")
         return Mode.Track;
