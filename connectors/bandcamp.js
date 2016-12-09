@@ -22,7 +22,7 @@ function bind(audio) {
 function sendStartPlaying(audio) {
     if (!window.Player || isNaN(getDuration(audio)))
         return;
-    
+
     lastNotificationTime = getTimestamp();
 
     var info = getCurrentTrackInfo(audio);
@@ -57,7 +57,7 @@ function getCurrentTrackInfo(audio) {
     }
 
     var track = getTrack();
-    if (!tryGetCompilationArtistAndTrack(track, info)) {        
+    if (!tryGetCompilationArtistAndTrack(track, info)) {
         info.artist = getArtist();
         info.track = track;
     }
@@ -71,7 +71,7 @@ function getMode() {
 
     var path = window.location.pathname.split("/")[1];
     if (!path) // in case of default album
-        return Mode.Album;        
+        return Mode.Album;
     if (path == "album")
         return Mode.Album;
     if (path == "track")
@@ -99,7 +99,7 @@ function tryGetCompilationArtistAndTrack(track, resultObj) {
     return result;
 }
 
-function getId(audio) {    
+function getId(audio) {
     var src = audio.attr("src");
 
     var idStrPos = Math.max(src.indexOf("&id="), src.indexOf("?id="));
@@ -133,13 +133,10 @@ function getTrack() {
 }
 
 function getArtist() {
-    var mode = getMode();    
+    var mode = getMode();
 
-    if (mode == Mode.Album || mode == Mode.Track) {
-        var bandName = $("#band-name-location .title").text();
-        var byArtist = $("span[itemprop=byArtist]").text();
-        return (bandName || byArtist).trim();
-    }
+    if (mode == Mode.Album || mode == Mode.Track)
+        return $("span[itemprop=byArtist]").text().trim();
 
     if (mode == Mode.Discover) {
         var defaultPlayerPlaying = $(".detail-player .busy,.playing").parents(".discover-detail-inner");
@@ -162,7 +159,7 @@ var mode = getMode();
 if (mode == Mode.Album || mode == Mode.Track)
     bind($("audio").first());
 if (mode == Mode.Discover)
-    $(document).ajaxComplete(function() { 
+    $(document).ajaxComplete(function() {
         bind($("audio").eq(1));
         bind($("audio").eq(2));
     });
