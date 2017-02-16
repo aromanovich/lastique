@@ -42,6 +42,9 @@ function sendStartPlaying() {
         } else {
             downloadUrl += '&dl=1';
         }
+        if (downloadUrl.indexOf('audio_api_unavailable') !== -1) {
+            downloadUrl = player._impl._url;
+        }
         data = {
             id: userId + '_' + songId,
             duration: songData[AudioUtils.AUDIO_ITEM_INDEX_DURATION],
