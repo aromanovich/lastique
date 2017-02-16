@@ -485,7 +485,7 @@ Zepto(function($) {
 
     if (!JSON.parse(localStorage.isNotFirstStarted || 'false')) {
         localStorage.lastScrobbled = JSON.stringify([]);
-        localStorage.enabledConnectors = JSON.stringify(['vk.js', 'youtube.js']);
+        localStorage.enabledConnectors = JSON.stringify(['vk.js', 'youtube.js', 'bandcamp.js']);
         localStorage.correctTrackNames = 'true';
         localStorage.isNotFirstStarted = 'true';
     }
