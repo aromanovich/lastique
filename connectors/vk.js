@@ -43,7 +43,16 @@ function sendStartPlaying() {
             downloadUrl += '&dl=1';
         }
         if (downloadUrl.indexOf('audio_api_unavailable') !== -1) {
-            downloadUrl = player._impl._url;
+            downloadUrl = null;
+            var playerImpl = player._impl;
+            if (playerImpl) {
+                if (playerImpl._url) {
+                    downloadUrl = playerImpl._url;
+                }
+                if (playerImpl._currentAudioEl) {
+                    downloadUrl = playerImpl._currentAudioEl.src;
+                }
+            }
         }
         data = {
             id: userId + '_' + songId,
