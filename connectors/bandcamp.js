@@ -127,8 +127,14 @@ function getArtist() {
         return $(".detail-player .playing,.busy").parents(".discover-detail-inner").find(".detail-body .detail-artist a").text().trim();
 }
 
-function getDownloadUrl(audio) {
-    return audio.attr("src");
+function getDownloadUrl(audio) {	
+    return ensureAbsoluteUrl(audio.attr("src"));
+}
+
+function ensureAbsoluteUrl(url) {
+	if (url.startsWith("//"))
+		return window.location.protocol + url;
+	return url;
 }
 
 var Mode = { Album : 0, Track : 1, Discover : 2 };
